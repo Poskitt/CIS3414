@@ -1,0 +1,8 @@
+# Pin loosely so pip can install wheels on newer Python (e.g. 3.14).
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+scikit-learn>=1.5.0
+joblib>=1.4.0
+python-multipart>=0.0.9

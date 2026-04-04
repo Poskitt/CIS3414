@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+data/safety.db
+data/app_data.json
+app/ml_artifacts/*.joblib
+_mode_check.txt
+
+# PAN12 corpus (large; obtain separately — see README)
+training/pan12-*/
