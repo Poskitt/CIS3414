@@ -55,12 +55,19 @@ if errorlevel 1 (
 :DoPush
 echo.
 echo Pushing...
-git push
+set "GIT_BRANCH="
+for /f "delims=" %%b in ('git rev-parse --abbrev-ref HEAD 2^>nul') do set "GIT_BRANCH=%%b"
+if not defined GIT_BRANCH (
+  echo Could not detect branch name. Run: git push -u origin main
+  pause
+  exit /b 1
+)
+git push -u origin "%GIT_BRANCH%"
 set "EC=%ERRORLEVEL%"
 if not "%EC%"=="0" (
   echo.
-  echo Push failed. If the branch has no upstream yet, run once:
-  echo   git push -u origin main
+  echo Push failed. Check: git remote -v
+  echo If there is no origin: git remote add origin ^<your-repo-url^>
   pause
   exit /b %EC%
 )
