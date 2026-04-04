@@ -48,41 +48,207 @@ def build_summary(store: AppStore, conv) -> ConversationSummaryOut:
         message_count=int(n),
         last_preview=preview,
         latest_tier=lr.tier if lr else None,
+        latest_final_score=float(lr.final_score) if lr else None,
     )
+
+
+# (title, lines) where each line is ("a" | "b", message) for alice / first user, bob / second.
+_DEMO_CONVERSATIONS: list[tuple[str, list[tuple[str, str]]]] = [
+    (
+        "Homework group (safe)",
+        [
+            ("a", "Hey did you finish the math worksheet?"),
+            ("b", "Almost done. Want to compare answers after class?"),
+        ],
+    ),
+    (
+        "Soccer club (safe)",
+        [
+            ("b", "Practice moved to 4pm Thursday."),
+            ("a", "Thanks, I will tell everyone."),
+        ],
+    ),
+    ("Empty thread (completely ok)", []),
+    ("Sandbox chat", []),
+    (
+        "Movie night Friday (safe)",
+        [
+            ("a", "Still on for the film at 7?"),
+            ("b", "Yep, I will grab snacks."),
+        ],
+    ),
+    (
+        "Physics lab partner (safe)",
+        [
+            ("b", "Can you send the graph from last week?"),
+            ("a", "Sure, uploading to the drive now."),
+        ],
+    ),
+    (
+        "Chess club ladder (safe)",
+        [
+            ("a", "Good game yesterday."),
+            ("b", "Rematch next Tuesday?"),
+        ],
+    ),
+    (
+        "Carpool to airport (safe)",
+        [
+            ("b", "I can pick you up at 6 if that works."),
+            ("a", "Perfect, see you then."),
+        ],
+    ),
+    (
+        "Family BBQ Saturday (safe)",
+        [
+            ("a", "Mom says bring a salad if you can."),
+            ("b", "Will do, text me the address again?"),
+        ],
+    ),
+    (
+        "Lost phone wrong number (safe)",
+        [
+            ("b", "Sorry wrong number!"),
+            ("a", "No worries, happens all the time."),
+        ],
+    ),
+    (
+        "Weather small talk (safe)",
+        [
+            ("a", "Finally stopped raining."),
+            ("b", "About time. Weekend hike?"),
+        ],
+    ),
+    (
+        "Compliment from stranger (suspicious)",
+        [
+            ("b", "hey beautiful you look amazing today"),
+            ("a", "Thanks? I think you have the wrong person."),
+        ],
+    ),
+    (
+        "Game lobby age ask (borderline)",
+        [
+            ("b", "nice clutch. how old are you?"),
+            ("a", "16, you?"),
+            ("b", "22 lol we should duo more"),
+        ],
+    ),
+    (
+        "Vague meetup secrecy (suspicious)",
+        [
+            ("b", "lets meet up tonight dont tell anyone"),
+            ("a", "That sounds weird, why secret?"),
+        ],
+    ),
+    (
+        "Grooming escalation arc (high risk)",
+        [
+            ("b", "hey beautiful"),
+            ("a", "hello stranger"),
+            ("b", "how old are you?"),
+            ("a", "i am 13"),
+            ("b", "i am 43"),
+            ("a", "i dont know if my parents would like this"),
+            ("b", "that doesnt matter, we can run away together"),
+        ],
+    ),
+    (
+        "Isolation and meet pressure (high risk)",
+        [
+            ("b", "youre mature for your age"),
+            ("a", "i am 14"),
+            ("b", "pick you up after school, nobody has to know"),
+        ],
+    ),
+    (
+        "Gift card scam (scam)",
+        [
+            ("b", "IRS owes you a refund, buy gift cards and read codes here"),
+            ("a", "This sounds fake."),
+        ],
+    ),
+    (
+        "Crypto double money (scam)",
+        [
+            ("b", "Send bitcoin to this wallet, we double it in 24h guaranteed"),
+            ("a", "Yeah right."),
+        ],
+    ),
+    (
+        "Fake job fee (scam)",
+        [
+            ("b", "You got the job! Pay a $50 processing fee via wire to start."),
+            ("a", "Real employers do not do that."),
+        ],
+    ),
+    (
+        "Hyperbolic vent (mixed)",
+        [
+            ("a", "I am so mad I could scream at the wall for an hour."),
+            ("b", "Want to talk about it?"),
+        ],
+    ),
+    (
+        "Study group memes (safe)",
+        [
+            ("b", "Did you see the profs meme in the slides?"),
+            ("a", "Lol yes, accidental comedy gold."),
+        ],
+    ),
+    (
+        "Nudes pressure thread (high risk)",
+        [
+            ("b", "send me a pic, just between us"),
+            ("a", "no thats not ok"),
+            ("b", "come on dont be shy"),
+        ],
+    ),
+    (
+        "Threat style wording (threat)",
+        [
+            ("b", "I will blow up the whole server if they ban me"),
+            ("a", "Please calm down, its just a game."),
+        ],
+    ),
+    (
+        "Informed parents hangout (safe)",
+        [
+            ("b", "lets meet up cuh"),
+            ("a", "yeah nws, let me tell my parents"),
+            ("b", "ok nws!"),
+            ("a", "ok, ive told my parents, they said its fine"),
+            ("b", "ok how old are you?"),
+        ],
+    ),
+    (
+        "Discord mod help (safe)",
+        [
+            ("a", "Can you unlock the voice channel for the event?"),
+            ("b", "Done. Starts at 8."),
+        ],
+    ),
+]
 
 
 def _ensure_demo_conversations(store: AppStore) -> None:
-    if store.has_conversation_title("Homework group (safe)"):
-        return
     users = store.non_moderator_users()
     if len(users) < 2:
         return
-    u_alice, u_bob = users[0], users[1]
+    ua, ub = users[0].id, users[1].id
 
     def add_conv(title: str, lines: list[tuple[int, str]]) -> None:
+        if store.has_conversation_title(title):
+            return
         c = store.add_conversation(title, send_restricted=False)
-        store.add_participants(c.id, [u_alice.id, u_bob.id])
+        store.add_participants(c.id, [ua, ub])
         for sender_id, content in lines:
             store.add_message(c.id, sender_id, content)
-        if lines:
-            run_pipeline(store, c.id)
+        run_pipeline(store, c.id)
 
-    add_conv(
-        "Homework group (safe)",
-        [
-            (u_alice.id, "Hey did you finish the math worksheet?"),
-            (u_bob.id, "Almost done. Want to compare answers after class?"),
-        ],
-    )
-    add_conv(
-        "Soccer club (safe)",
-        [
-            (u_bob.id, "Practice moved to 4pm Thursday."),
-            (u_alice.id, "Thanks, I will tell everyone."),
-        ],
-    )
-    add_conv("Empty thread (completely ok)", [])
-    add_conv("Sandbox chat", [])
+    for title, pairs in _DEMO_CONVERSATIONS:
+        mapped = [(ua if who == "a" else ub, text) for who, text in pairs]
+        add_conv(title, mapped)
 
 
 @router.post("/bootstrap", response_model=BootstrapOut)

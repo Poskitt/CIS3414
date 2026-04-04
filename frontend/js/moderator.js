@@ -1,5 +1,5 @@
 /**
- * Moderator queue — list open cases, dismiss or confirm with optional note.
+ * Moderator queue: list open cases, dismiss or confirm with optional note.
  */
 
 const MOD_API = "/api/moderator";
@@ -15,7 +15,7 @@ function renderModeratorTable() {
 
   for (const c of modState.cases) {
     const r = c.latest_risk;
-    const riskStr = r ? `${r.tier} (${r.final_score})` : "—";
+    const riskStr = r ? `${r.tier} (${r.final_score})` : "-";
     const title = c.conversation_title || `Conv ${c.conversation_id}`;
     const pid = c.conversation_public_id || "";
 

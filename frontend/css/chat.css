@@ -1,24 +1,42 @@
 /* --------------------------------------------------------------------------
-   Chat / mock DM page
+   Chat / mock DM page - full width; sidebar flush to viewport left
    -------------------------------------------------------------------------- */
+
+html {
+  height: 100%;
+}
+
+body.chat-page {
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 
 .chat-layout {
   display: flex;
-  max-width: 1100px;
-  margin: 0 auto;
-  min-height: calc(100vh - 52px);
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  align-items: stretch;
+  overflow: hidden;
 }
 
-/* Sidebar — conversation list */
+/* Sidebar: conversation list */
 .chat-sidebar {
   width: 280px;
-  flex-shrink: 0;
+  flex: 0 0 280px;
   border-right: 1px solid var(--border);
   background: var(--panel);
   padding: 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .chat-sidebar__heading {
@@ -26,7 +44,8 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--muted);
-  margin: 0 0 0.25rem;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .chat-list {
@@ -34,8 +53,14 @@
   margin: 0;
   padding: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
-  max-height: calc(100vh - 140px);
+  min-height: 0;
+  scrollbar-gutter: stable;
+}
+
+.chat-sidebar__new {
+  flex-shrink: 0;
 }
 
 .chat-list__item {
@@ -64,11 +89,36 @@
   word-break: break-all;
 }
 
+.chat-list__score {
+  margin-left: 0.35rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.chat-list__score--safe {
+  color: var(--safe);
+}
+
+.chat-list__score--suspicious {
+  color: var(--warn);
+}
+
+.chat-list__score--high_risk {
+  color: var(--danger);
+}
+
+.chat-list__score--none {
+  color: var(--muted);
+  font-weight: 500;
+}
+
 /* Main column */
 .chat-main {
   flex: 1;
-  padding: 1rem;
+  padding: 1rem 1.25rem;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .chat-toolbar {

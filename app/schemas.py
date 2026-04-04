@@ -35,6 +35,7 @@ class ConversationSummaryOut(BaseModel):
     message_count: int
     last_preview: str
     latest_tier: str | None = None
+    latest_final_score: float | None = None
 
 
 class ConversationOut(BaseModel):

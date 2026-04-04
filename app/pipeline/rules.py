@@ -273,6 +273,8 @@ THREAT_REGEX = [
     re.compile(r"\b(i'll|i\s+will)\s+\w*\s*(kill|hurt|shoot|stab)\b", re.I),
 ]
 
+_RE_COME_ON = re.compile(r"\bcome on\b", re.I)
+
 AGE_CUE_PATTERNS = [
     re.compile(r"\bhow\s+old\s+are\s+you\b", re.I),
     re.compile(r"\b(i am|i'm|im)\s+\d{1,2}\b", re.I),
@@ -480,6 +482,86 @@ def _age_disclosure_cluster(fold: str, conversation_text: str) -> tuple[float, l
     return min(1.0, s), hits
 
 
+def _scam_financial_cluster(fold: str) -> tuple[float, list[str]]:
+    """
+    Advance-fee / impersonation scams: tax + gift cards, crypto doubling, fake job fees.
+    Short threads need a floor score (keyword density alone stays too low).
+    """
+    hits: list[str] = []
+    s = 0.0
+    gift = "gift card" in fold or "gift cards" in fold
+    if gift and any(
+        x in fold
+        for x in (
+            "irs",
+            "refund",
+            "owe you",
+            "tax ",
+            "read code",
+            "read codes",
+        )
+    ):
+        s = max(s, 0.92)
+        hits.append("cluster:advance_fee_gift_tax")
+    if ("bitcoin" in fold or "btc" in fold or "crypto" in fold) and any(
+        x in fold for x in ("double", "guaranteed", "wallet")
+    ):
+        s = max(s, 0.9)
+        hits.append("cluster:crypto_double_scam")
+    if any(
+        x in fold
+        for x in (
+            "processing fee",
+            "via wire",
+            "wire transfer",
+            "wire to",
+            "pay a $",
+            "pay the fee",
+        )
+    ) and any(x in fold for x in ("job", "got the job", "the job", "interview")):
+        s = max(s, 0.9)
+        hits.append("cluster:job_upfront_fee_scam")
+    return min(1.0, s), hits
+
+
+def _image_pressure_cluster(fold: str) -> tuple[float, list[str]]:
+    """
+    Coercive image requests + secrecy or persistence (short threads, low keyword density).
+    """
+    hits: list[str] = []
+    pic = any(
+        p in fold
+        for p in (
+            "send me a pic",
+            "send me pic",
+            "send a pic",
+            "send pic",
+            "send photo",
+            "send nudes",
+            "send noodz",
+            "show me your",
+        )
+    )
+    secrecy_or_pressure = any(
+        x in fold
+        for x in (
+            "just between us",
+            "between us",
+            "our secret",
+            "dont tell",
+            "nobody has to know",
+            "dont be shy",
+        )
+    ) or bool(_RE_COME_ON.search(fold))
+    if pic and secrecy_or_pressure:
+        hits.append("cluster:pic_secrecy_pressure")
+        return 0.88, hits
+    if pic:
+        hits.append("cluster:pic_request")
+        return 0.58, hits
+    return 0.0, hits
+
+
 def detect_grooming_sequence(messages: list[str]) -> dict:
     """
     Ordered scan of one line per message (e.g. ``user2: text``). Detects grooming-arc
@@ -616,6 +698,12 @@ def rule_score_for_text(
     cluster_s, cluster_hits = _age_disclosure_cluster(fold, conversation_text)
     hits["age_disclosure_cluster"] = cluster_hits
 
+    scam_s, scam_hits = _scam_financial_cluster(fold)
+    hits["scam_cluster"] = scam_hits
+
+    img_s, img_hits = _image_pressure_cluster(fold)
+    hits["image_pressure_cluster"] = img_hits
+
     msg_lines = messages if messages is not None else [
         ln.strip() for ln in conversation_text.splitlines() if ln.strip()
     ]
@@ -629,7 +717,14 @@ def rule_score_for_text(
 
     grooming_raw = 0.45 * density + 0.35 * age_boost + 0.2 * escalation
     grooming_score = float(max(0.0, min(1.0, grooming_raw)))
-    grooming_score = max(grooming_score, phrase_s, cluster_s, float(gs["score"]))
+    grooming_score = max(
+        grooming_score,
+        phrase_s,
+        cluster_s,
+        scam_s,
+        img_s,
+        float(gs["score"]),
+    )
     if gs.get("prosocial_parent_context"):
         grooming_score = min(grooming_score, 0.18)
 

@@ -1,5 +1,5 @@
 /**
- * Mock DM client — loads conversations, sends messages, shows hybrid risk tier.
+ * Mock DM client: loads conversations, sends messages, shows hybrid risk tier.
  */
 
 const API_BASE = "/api";
@@ -48,6 +48,24 @@ function renderRisk(risk) {
   }
 }
 
+function tierScoreClass(tier) {
+  if (!tier) return "chat-list__score chat-list__score--none";
+  if (tier === "high_risk") {
+    return "chat-list__score chat-list__score--high_risk";
+  }
+  if (tier === "suspicious") {
+    return "chat-list__score chat-list__score--suspicious";
+  }
+  return "chat-list__score chat-list__score--safe";
+}
+
+function formatListScore(finalScore) {
+  if (finalScore == null || finalScore === "") return "n/a";
+  const n = Number(finalScore);
+  if (Number.isNaN(n)) return "n/a";
+  return n.toFixed(4);
+}
+
 function renderChatList() {
   const ul = el("chatList");
   ul.innerHTML = "";
@@ -58,9 +76,13 @@ function renderChatList() {
     if (c.id === state.conversationId) {
       li.classList.add("is-active");
     }
+    const scoreText = formatListScore(c.latest_final_score);
+    const scoreClass = tierScoreClass(c.latest_tier);
     li.innerHTML = `
       <div>${escapeHtml(c.title)}</div>
-      <div class="chat-list__sub">#${c.id} · ${escapeHtml(c.public_id)}</div>
+      <div class="chat-list__sub">#${c.id}
+        <span class="${scoreClass}" title="Latest fused risk score">${escapeHtml(scoreText)}</span>
+      </div>
       <div class="chat-list__sub">${escapeHtml(c.last_preview)}</div>
     `;
     li.addEventListener("click", () => {
@@ -74,7 +96,8 @@ function renderChatList() {
 
 function renderThread(data) {
   el("convTitle").textContent = data.title || "Chat";
-  el("convPublicId").textContent = "public_id: " + (data.public_id || "—");
+  el("convPublicId").textContent =
+    "public_id: " + (data.public_id || "n/a");
 
   const thread = el("thread");
   thread.innerHTML = "";

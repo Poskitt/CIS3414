@@ -3,14 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Chat prototype — safety demo</title>
+    <title>AI-Driven Social Media Safety System</title>
     <link rel="stylesheet" href="/css/common.css" />
     <link rel="stylesheet" href="/css/chat.css" />
   </head>
-  <body>
+  <body class="chat-page">
     <header class="app-header">
-      <h1>Mock DM — safety prototype</h1>
-      <nav>
+      <div class="app-header__brand">
+        <h1 class="app-header__title">AI-Driven Social Media Safety System</h1>
+        <p class="app-header__tagline">
+          Conversation-Based Harm Detection Framework
+        </p>
+      </div>
+      <nav class="app-header__nav">
         <a href="/moderator.html">Moderator</a>
       </nav>
     </header>
@@ -19,14 +24,14 @@
       <aside class="chat-sidebar" aria-label="Conversations">
         <h2 class="chat-sidebar__heading">Chats</h2>
         <ul id="chatList" class="chat-list" aria-label="Conversation list"></ul>
-        <button type="button" id="newChat" class="btn btn--secondary btn--block">
+        <button type="button" id="newChat" class="btn btn--secondary btn--block chat-sidebar__new">
           New chat
         </button>
       </aside>
 
       <div class="chat-main">
         <header class="chat-conv-head">
-          <div class="chat-conv-head__title" id="convTitle">—</div>
+          <div class="chat-conv-head__title" id="convTitle">Pick a chat</div>
           <div class="chat-conv-head__id mono" id="convPublicId"></div>
         </header>
 
@@ -86,7 +91,7 @@
             aria-label="Message text"
           ></textarea>
           <p class="hint">
-            Enter — send · Shift+Enter — new line · Tab — switch Alice/Bob
+            Enter: send · Shift+Enter: new line · Tab: switch Alice/Bob
           </p>
           <div class="btn-row">
             <button type="button" id="send" class="btn btn--primary">
