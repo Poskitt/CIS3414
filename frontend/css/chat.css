@@ -1,0 +1,232 @@
+/* --------------------------------------------------------------------------
+   Chat / mock DM page
+   -------------------------------------------------------------------------- */
+
+.chat-layout {
+  display: flex;
+  max-width: 1100px;
+  margin: 0 auto;
+  min-height: calc(100vh - 52px);
+}
+
+/* Sidebar — conversation list */
+.chat-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--panel);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chat-sidebar__heading {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 0 0 0.25rem;
+}
+
+.chat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+  max-height: calc(100vh - 140px);
+}
+
+.chat-list__item {
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  margin-bottom: 0.35rem;
+}
+
+.chat-list__item:hover {
+  background: rgba(61, 139, 253, 0.08);
+}
+
+.chat-list__item.is-active {
+  background: rgba(61, 139, 253, 0.18);
+  border-color: var(--accent);
+}
+
+.chat-list__sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+
+/* Main column */
+.chat-main {
+  flex: 1;
+  padding: 1rem;
+  min-width: 0;
+}
+
+.chat-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.chat-toolbar label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.chat-toolbar select {
+  font: inherit;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.5rem;
+}
+
+.chat-conv-head {
+  margin-bottom: 0.75rem;
+}
+
+.chat-conv-head__title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.chat-conv-head__id {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  word-break: break-all;
+  margin-top: 0.2rem;
+}
+
+/* Message thread */
+.thread {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem;
+  min-height: 220px;
+  max-height: 420px;
+  overflow-y: auto;
+  background: var(--bg);
+  margin-bottom: 0.75rem;
+}
+
+.thread__msg {
+  margin-bottom: 0.6rem;
+  font-size: 0.95rem;
+}
+
+.thread__meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 0.15rem;
+}
+
+/* Composer */
+.composer textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  font: inherit;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.65rem;
+}
+
+.composer .btn-row {
+  margin-top: 0.5rem;
+}
+
+/* Risk banner */
+.risk-banner {
+  display: none;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--warn);
+  background: rgba(240, 173, 78, 0.12);
+}
+
+.risk-banner.is-visible {
+  display: block;
+}
+
+.risk-banner--high {
+  border-color: var(--danger);
+  background: rgba(217, 83, 79, 0.15);
+}
+
+.risk-pill {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+
+.risk-pill--safe {
+  background: rgba(92, 184, 92, 0.2);
+  color: var(--safe);
+}
+
+.risk-pill--suspicious {
+  background: rgba(240, 173, 78, 0.2);
+  color: var(--warn);
+}
+
+.risk-pill--high_risk {
+  background: rgba(217, 83, 79, 0.25);
+  color: var(--danger);
+}
+
+/* Safety modal */
+.modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 50;
+}
+
+.modal-backdrop.is-visible {
+  display: flex;
+}
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  max-width: 420px;
+  width: 100%;
+}
+
+.modal h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.modal__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}

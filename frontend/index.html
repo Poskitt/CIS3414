@@ -1,130 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Chat prototype</title>
-<style>
-:root{--bg:#0f1419;--panel:#1a2332;--text:#e7ecf3;--muted:#8b9bb4;--accent:#3d8bfd;--warn:#f0ad4e;--danger:#d9534f;--safe:#5cb85c;--border:#2a3545;}
-*{box-sizing:border-box;}
-body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-a{color:var(--accent);}
-header{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;border-bottom:1px solid var(--border);background:var(--panel);}
-h1{font-size:1.1rem;margin:0;font-weight:600;}
-.layout{display:flex;max-width:1100px;margin:0 auto;min-height:calc(100vh - 52px);}
-.sidebar{width:280px;flex-shrink:0;border-right:1px solid var(--border);background:var(--panel);padding:.75rem;display:flex;flex-direction:column;gap:.5rem;}
-.sidebar h2{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 .25rem;}
-#chatList{list-style:none;margin:0;padding:0;overflow-y:auto;flex:1;max-height:calc(100vh - 140px);}
-#chatList li{padding:.55rem .65rem;border-radius:8px;cursor:pointer;border:1px solid transparent;font-size:.9rem;margin-bottom:.35rem;}
-#chatList li:hover{background:rgba(61,139,253,.08);}
-#chatList li.active{background:rgba(61,139,253,.18);border-color:var(--accent);}
-#chatList .sub{font-size:.72rem;color:var(--muted);margin-top:.2rem;font-family:ui-monospace,monospace;word-break:break-all;}
-.main-col{flex:1;padding:1rem;min-width:0;}
-.toolbar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:.75rem;}
-.conv-head{margin-bottom:.75rem;}
-.conv-head .title{font-size:1rem;font-weight:600;}
-.conv-head .pid{font-size:.75rem;color:var(--muted);font-family:ui-monospace,monospace;word-break:break-all;margin-top:.2rem;}
-label{font-size:.85rem;color:var(--muted);}
-select,button,textarea{font:inherit;}
-select{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:.35rem .5rem;}
-button{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:.45rem .85rem;cursor:pointer;}
-button.secondary{background:transparent;border:1px solid var(--border);color:var(--text);}
-button.danger{background:var(--danger);}
-.thread{border:1px solid var(--border);border-radius:10px;padding:.75rem;min-height:220px;max-height:420px;overflow-y:auto;background:var(--bg);margin-bottom:.75rem;}
-.msg{margin-bottom:.6rem;font-size:.95rem;}
-.msg .meta{font-size:.75rem;color:var(--muted);margin-bottom:.15rem;}
-.composer{display:flex;flex-direction:column;gap:.5rem;}
-textarea{width:100%;min-height:72px;resize:vertical;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:.5rem .65rem;}
-.banner{display:none;padding:.65rem .85rem;border-radius:8px;margin-bottom:.75rem;font-size:.9rem;border:1px solid var(--warn);background:rgba(240,173,78,.12);}
-.banner.visible{display:block;}
-.banner.high{border-color:var(--danger);background:rgba(217,83,79,.15);}
-.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:1rem;z-index:50;}
-.modal-backdrop.visible{display:flex;}
-.modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:1.25rem;max-width:420px;width:100%;}
-.modal h2{margin:0 0 .5rem;font-size:1.1rem;}
-.risk-pill{display:inline-block;font-size:.75rem;padding:.15rem .45rem;border-radius:999px;margin-left:.35rem;vertical-align:middle;}
-.risk-pill.safe{background:rgba(92,184,92,.2);color:var(--safe);}
-.risk-pill.suspicious{background:rgba(240,173,78,.2);color:var(--warn);}
-.risk-pill.high_risk{background:rgba(217,83,79,.25);color:var(--danger);}
-.mono{font-family:ui-monospace,monospace;font-size:.78rem;}
-</style>
-</head>
-<body>
-<header><h1>Mock DM — safety prototype</h1><nav><a href="/moderator.html">Moderator</a></nav></header>
-<div class="layout">
-<aside class="sidebar">
-<h2>Chats</h2>
-<ul id="chatList" aria-label="Conversation list"></ul>
-<button type="button" class="secondary" id="newChat" style="width:100%">New chat</button>
-</aside>
-<div class="main-col">
-<div class="conv-head"><div class="title" id="convTitle">—</div><div class="pid" id="convPublicId"></div></div>
-<div class="toolbar"><label>Send as <select id="userSelect"></select></label><span id="riskLabel"></span></div>
-<div id="banner" class="banner" role="status"></div>
-<div id="modal" class="modal-backdrop" aria-hidden="true"><div class="modal" role="dialog"><h2>Safety alert</h2><p>This conversation may involve unsafe behaviour. You can report or dismiss.</p><div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem"><button type="button" id="modalReport">Report</button><button type="button" class="secondary" id="modalDismiss">Dismiss</button></div></div></div>
-<section class="thread" id="thread" aria-live="polite"></section>
-<section class="composer">
-<textarea id="input" placeholder="Type a message" aria-keyshortcuts="Enter Shift+Enter Tab"></textarea>
-<p class="mono" style="color:var(--muted);font-size:.72rem;margin:0">Enter send · Shift+Enter new line · Tab switch Alice/Bob</p>
-<div style="display:flex;gap:.5rem;flex-wrap:wrap">
-<button type="button" id="send">Send</button>
-<button type="button" class="secondary" id="refresh">Refresh</button>
-<button type="button" class="secondary" id="analyze">Re-analyze</button>
-<button type="button" class="danger" id="report">Report</button>
-</div>
-<p id="restrictNote" class="mono" style="color:var(--muted);margin:0"></p>
-</section>
-</div>
-</div>
-<script>
-const API="/api";
-let state={conversationId:null,users:[],conversations:[]};
-function el(id){return document.getElementById(id);}
-function tierClass(t){return t==="high_risk"?"high_risk":t==="suspicious"?"suspicious":"safe";}
-function renderRisk(risk){const label=el("riskLabel"),banner=el("banner"),modal=el("modal");if(!risk){label.textContent="";banner.classList.remove("visible","high");return;}
-label.innerHTML=`Risk: <span class="risk-pill ${tierClass(risk.tier)}">${risk.tier}</span> <span class="mono" style="color:var(--muted)">(${risk.final_score})</span>`;
-if(risk.tier==="suspicious"){banner.textContent="Heads up: this thread looks suspicious.";banner.classList.add("visible");banner.classList.remove("high");}
-else if(risk.tier==="high_risk"){banner.textContent="High risk: messaging may be restricted.";banner.classList.add("visible","high");modal.classList.add("visible");modal.setAttribute("aria-hidden","false");}
-else{banner.classList.remove("visible","high");}}
-function escapeHtml(s){return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");}
-function renderChatList(){const ul=el("chatList");ul.innerHTML="";
-for(const c of state.conversations){const li=document.createElement("li");li.className=c.id===state.conversationId?"active":"";
-li.innerHTML=`<div>${escapeHtml(c.title)}</div><div class="sub">#${c.id} · ${escapeHtml(c.public_id)}</div><div class="sub">${escapeHtml(c.last_preview)}</div>`;
-li.onclick=()=>{state.conversationId=c.id;renderChatList();refresh();};ul.appendChild(li);}}
-function renderThread(data){el("convTitle").textContent=data.title||"Chat";el("convPublicId").textContent="public_id: "+(data.public_id||"—");
-const thread=el("thread");thread.innerHTML="";
-for(const m of data.messages||[]){const u=state.users.find(x=>x.id===m.sender_id);const name=u?u.username:`user ${m.sender_id}`;
-const div=document.createElement("div");div.className="msg";div.innerHTML=`<div class="meta">${name}</div><div>${escapeHtml(m.content)}</div>`;thread.appendChild(div);}
-thread.scrollTop=thread.scrollHeight;renderRisk(data.latest_risk);
-el("restrictNote").textContent=data.send_restricted?"Sending restricted until moderator dismisses.":"";}
-async function refresh(){if(state.conversationId==null)return;
-const [listRes,threadRes]=await Promise.all([fetch(`${API}/conversations`),fetch(`${API}/conversations/${state.conversationId}`)]);
-if(!listRes.ok||!threadRes.ok)throw new Error("load");
-state.conversations=await listRes.json();renderChatList();renderThread(await threadRes.json());}
-async function bootstrap(){const res=await fetch(`${API}/bootstrap`,{method:"POST"});if(!res.ok)throw new Error("bootstrap");const data=await res.json();
-state.conversationId=data.conversation_id;state.users=data.users;state.conversations=data.conversations||[];const sel=el("userSelect");sel.innerHTML="";
-for(const u of data.users.filter(x=>x.role!=="moderator")){const opt=document.createElement("option");opt.value=String(u.id);opt.textContent=u.username;sel.appendChild(opt);}
-const mod=data.users.find(x=>x.role==="moderator");if(mod){const opt=document.createElement("option");opt.value=String(mod.id);opt.textContent=mod.username+" (moderator)";sel.appendChild(opt);}
-renderChatList();await refresh();}
-async function send(){const text=el("input").value.trim();if(!text)return;const senderId=Number(el("userSelect").value);
-const res=await fetch(`${API}/send_message`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({conversation_id:state.conversationId,sender_id:senderId,content:text})});
-if(!res.ok){let d={};try{d=await res.json();}catch(e){}alert(d.detail||res.statusText);return;}
-el("input").value="";const data=await res.json();await refresh();if(data.risk)renderRisk(data.risk);}
-async function reanalyze(){const res=await fetch(`${API}/conversations/${state.conversationId}/analyze`,{method:"POST"});if(!res.ok){alert("Analyze failed");return;}await refresh();}
-async function report(){const res=await fetch(`${API}/conversations/${state.conversationId}/flag`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({source:"user",reason:"user_report_ui"})});
-if(!res.ok){alert("Flag failed");return;}alert("Reported to moderator queue.");}
-async function newChat(){const title=prompt("Title for the new chat (optional):","");const res=await fetch(`${API}/conversations`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:title||null})});
-if(!res.ok){alert("Could not create chat");return;}const sum=await res.json();state.conversationId=sum.id;await refresh();}
-function aliceBobIds(){const a=state.users.find(u=>u.username==="alice"),b=state.users.find(u=>u.username==="bob");
-if(a&&b)return[a.id,b.id];const reg=state.users.filter(u=>u.role==="user").sort((x,y)=>x.id-y.id);return reg.length>=2?[reg[0].id,reg[1].id]:reg.map(u=>u.id);}
-function cycleAliceBob(){const ids=aliceBobIds();if(ids.length<2)return;const sel=el("userSelect");const cur=Number(sel.value);const i=ids.indexOf(cur);sel.value=String(ids[(i+1)%ids.length]);}
-function onComposerKeydown(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();return;}
-if(e.key==="Tab"){e.preventDefault();cycleAliceBob();}}
-el("input").addEventListener("keydown",onComposerKeydown);
-el("send").onclick=send;el("refresh").onclick=refresh;el("analyze").onclick=reanalyze;el("report").onclick=report;el("newChat").onclick=newChat;
-el("modalDismiss").onclick=()=>{el("modal").classList.remove("visible");el("modal").setAttribute("aria-hidden","true");};
-el("modalReport").onclick=async()=>{await report();el("modal").classList.remove("visible");el("modal").setAttribute("aria-hidden","true");};
-bootstrap().catch(e=>{console.error(e);alert("Start API: python -m uvicorn app.main:app --reload");});
-</script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chat prototype — safety demo</title>
+    <link rel="stylesheet" href="/css/common.css" />
+    <link rel="stylesheet" href="/css/chat.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Mock DM — safety prototype</h1>
+      <nav>
+        <a href="/moderator.html">Moderator</a>
+      </nav>
+    </header>
+
+    <div class="chat-layout">
+      <aside class="chat-sidebar" aria-label="Conversations">
+        <h2 class="chat-sidebar__heading">Chats</h2>
+        <ul id="chatList" class="chat-list" aria-label="Conversation list"></ul>
+        <button type="button" id="newChat" class="btn btn--secondary btn--block">
+          New chat
+        </button>
+      </aside>
+
+      <div class="chat-main">
+        <header class="chat-conv-head">
+          <div class="chat-conv-head__title" id="convTitle">—</div>
+          <div class="chat-conv-head__id mono" id="convPublicId"></div>
+        </header>
+
+        <div class="chat-toolbar">
+          <label>
+            Send as
+            <select id="userSelect" aria-label="Send as user"></select>
+          </label>
+          <span id="riskLabel" aria-live="polite"></span>
+        </div>
+
+        <div
+          id="riskBanner"
+          class="risk-banner"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+        <div
+          id="safetyModal"
+          class="modal-backdrop"
+          aria-hidden="true"
+          aria-modal="true"
+        >
+          <div class="modal" role="dialog" aria-labelledby="safetyModalTitle">
+            <h2 id="safetyModalTitle">Safety alert</h2>
+            <p>
+              This conversation may involve unsafe behaviour. You can report
+              or dismiss this notice.
+            </p>
+            <div class="modal__actions">
+              <button type="button" id="modalReport" class="btn btn--primary">
+                Report
+              </button>
+              <button
+                type="button"
+                id="modalDismiss"
+                class="btn btn--secondary"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <section
+          class="thread"
+          id="thread"
+          aria-label="Message thread"
+          aria-live="polite"
+        ></section>
+
+        <section class="composer" aria-label="Compose message">
+          <textarea
+            id="input"
+            placeholder="Type a message…"
+            aria-label="Message text"
+          ></textarea>
+          <p class="hint">
+            Enter — send · Shift+Enter — new line · Tab — switch Alice/Bob
+          </p>
+          <div class="btn-row">
+            <button type="button" id="send" class="btn btn--primary">
+              Send
+            </button>
+            <button type="button" id="refresh" class="btn btn--secondary">
+              Refresh
+            </button>
+            <button type="button" id="analyze" class="btn btn--secondary">
+              Re-analyze
+            </button>
+            <button type="button" id="report" class="btn btn--danger">
+              Report
+            </button>
+          </div>
+          <p id="restrictNote" class="mono hint"></p>
+        </section>
+      </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/chat.js"></script>
+  </body>
 </html>
