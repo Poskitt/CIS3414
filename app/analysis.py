@@ -8,7 +8,7 @@ from app.pipeline.conversation_features import augment_text_for_ml
 from app.pipeline.fusion import fuse_scores, tier_from_score
 from app.pipeline.rules import rule_score_for_text
 
-_pipe = None
+_pipe = None  # loaded once
 
 
 def get_pipe():
@@ -45,6 +45,7 @@ def upsert_moderation_case(
 def run_pipeline(
     store: AppStore, conversation_id: int, last_n: int | None = None
 ) -> SimpleNamespace:
+    # rules on raw thread; ML on augmented text; then fuse and persist tier
     text, n = thread_text(store, conversation_id, last_n)
     msg_lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     rule_s, hits = rule_score_for_text(text, n, messages=msg_lines)

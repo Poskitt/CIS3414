@@ -1,7 +1,3 @@
-/**
- * Moderator queue: list open cases, dismiss or confirm with optional note.
- */
-
 const MOD_API = "/api/moderator";
 
 const modState = {

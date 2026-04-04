@@ -9,8 +9,7 @@ from sklearn.pipeline import Pipeline
 
 from app.config import settings
 
-# Map multi-class training labels -> expected harm for fusion with rule score (0–1 scale).
-# Labels: 0 harmless, 1 grooming, 2 scam, 3 crime, 4 extremism
+# Multiclass label -> scalar harm for fusion (0..1).
 MULTICLASS_SEVERITY: dict[int, float] = {
     0: 0.0,
     1: 0.42,
@@ -51,11 +50,6 @@ def _classes_for_pipe(pipe) -> list:
 
 
 def ml_risk_score(pipe, conversation_text: str) -> float:
-    """
-    Return a scalar in [0, 1] for fusion with the rule leg.
-    - Binary model: probability of positive class (1).
-    - Multi-class (0–4): expectation of severity under MULTICLASS_SEVERITY.
-    """
     if pipe is None or not conversation_text.strip():
         return 0.35
     proba = pipe.predict_proba([conversation_text])[0]

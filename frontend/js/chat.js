@@ -1,7 +1,3 @@
-/**
- * Mock DM client: loads conversations, sends messages, shows hybrid risk tier.
- */
-
 const API_BASE = "/api";
 
 const state = {

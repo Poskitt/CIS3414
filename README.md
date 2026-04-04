@@ -124,7 +124,7 @@ python -m training.evaluate --data synthetic --no-extra-csvs
 python -m training.evaluate --no-write-config
 ```
 
-This prints metrics, compares tier cuts on **fused** scores, writes **`app/ml_artifacts/calibrated_pipeline.joblib`**, and by default updates the **auto-tier block** in [`app/config.py`](app/config.py). Re-run when the dataset or fusion logic changes.
+This prints metrics, compares tier cuts on **fused** scores, writes **`app/ml_artifacts/calibrated_pipeline.joblib`**, and by default updates **`tier_safe_max` / `tier_suspicious_max`** in [`app/config.py`](app/config.py). Re-run when the dataset or fusion logic changes.
 
 ---
 

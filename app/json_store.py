@@ -1,11 +1,5 @@
-"""
-File-backed JSON persistence for chats (replaces SQLite for the prototype).
-
-Default path: data/app_data.json — v2 on disk (array rows + member_ids, indented for reading);
-legacy v1 verbose JSON is still read and migrated automatically.
-
-Thread-safe: each mutating API call reloads, applies, saves under a lock.
-"""
+# JSON store for users, chats, messages, risk rows, moderation cases.
+# Mutations reload, patch, save under a lock. v1 files are migrated to v2 on read.
 from __future__ import annotations
 
 import json
@@ -215,7 +209,6 @@ def _expand_compact_v2(raw: dict[str, Any]) -> dict[str, Any]:
 
 
 def _ensure_member_ids_verbose_v2(raw: dict[str, Any]) -> dict[str, Any]:
-    """v2 dict-shaped file (e.g. hand-edited): attach member_ids from participants if needed."""
     if raw.get("participants"):
         by_c: dict[int, list[int]] = {}
         for p in raw["participants"]:
@@ -341,7 +334,7 @@ class AppStore:
         with self._lock:
             return fn(deepcopy(self._read()))
 
-    # --- users ---
+    # users
     def users_empty(self) -> bool:
         return self._view(lambda d: len(d["users"]) == 0)
 
@@ -388,7 +381,7 @@ class AppStore:
     def has_conversation_title(self, title: str) -> bool:
         return self._view(lambda d: any(c["title"] == title for c in d["conversations"]))
 
-    # --- conversations ---
+    # conversations
     def add_conversation(self, title: str, send_restricted: bool = False) -> SimpleNamespace:
         def op(data: dict[str, Any]) -> SimpleNamespace:
             cid = self._next_id(data, "conversation")
@@ -443,7 +436,7 @@ class AppStore:
 
         self._mutate(op)
 
-    # --- messages ---
+    # messages
     def add_message(self, conversation_id: int, sender_id: int, content: str) -> SimpleNamespace:
         def op(data: dict[str, Any]) -> SimpleNamespace:
             mid = self._next_id(data, "message")
@@ -472,7 +465,7 @@ class AppStore:
             lambda d: sum(1 for m in d["messages"] if m["conversation_id"] == conversation_id)
         )
 
-    # --- risk ---
+    # risk
     def add_risk_assessment(
         self,
         conversation_id: int,
@@ -510,7 +503,7 @@ class AppStore:
 
         return self._view(pick)
 
-    # --- moderation cases ---
+    # moderation
     def add_moderation_case(
         self,
         conversation_id: int,
@@ -590,7 +583,6 @@ def get_store() -> AppStore:
 
 
 def init_store() -> None:
-    """Ensure JSON file exists (called on app startup)."""
     get_store()._read()  # noqa: SLF001
 
 

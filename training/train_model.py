@@ -1,4 +1,4 @@
-"""Train TF-IDF + calibrated logistic regression. Run from project root: python -m training.train_model --help"""
+# Train TF-IDF + calibrated LR. From repo root: python -m training.train_model
 from __future__ import annotations
 
 import argparse
@@ -31,7 +31,6 @@ ART.mkdir(parents=True, exist_ok=True)
 
 
 def collect_training_bundle(args: argparse.Namespace) -> tuple[list[str], list[int], list[str]]:
-    """Returns texts, labels, source tags (synthetic | pan12 | safe_csv | harmful_csv)."""
     X: list[str] = []
     y: list[int] = []
     sources: list[str] = []

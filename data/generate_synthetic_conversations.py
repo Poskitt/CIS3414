@@ -1,16 +1,4 @@
-"""
-Generate data/synthetic_conversations.csv with 5-way labels.
-
-Labels:
-  0 = harmless
-  1 = suspicious / grooming
-  2 = scam
-  3 = crime
-  4 = extremism
-
-Run from project root: python data/generate_synthetic_conversations.py [--rows N]
-Default targets ~240 rows (balanced-ish); use --rows 600 for a larger set.
-"""
+# Writes synthetic_conversations.csv; labels 0 harmless .. 4 extremism.
 from __future__ import annotations
 
 import argparse
@@ -22,7 +10,6 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = Path(__file__).resolve().parent / "synthetic_conversations.csv"
 
 def conv(lines: list[tuple[str, str]]) -> str:
-    """Build conversation string uA/uB with optional timestamps for realism."""
     parts = []
     for i, (u, msg) in enumerate(lines):
         ts = f"{8 + (i % 12):02d}:{(i * 7) % 60:02d}"

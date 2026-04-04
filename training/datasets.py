@@ -1,4 +1,4 @@
-"""Shared data loading for train_model.py and evaluate.py."""
+# CSV loaders + helpers for training scripts.
 from __future__ import annotations
 
 import csv
@@ -46,7 +46,6 @@ def gold_tier(label: int, source: str) -> str:
 
 
 def balance_xy(X: list[str], y: list[int], random_state: int = 42) -> tuple[list[str], list[int]]:
-    """Oversample minority integer labels so each class matches the largest class count."""
     rng = np.random.RandomState(random_state)
     by_class: dict[int, list[str]] = {}
     for xi, yi in zip(X, y):

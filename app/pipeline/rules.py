@@ -2,19 +2,8 @@ from __future__ import annotations
 
 import re
 
-"""
-Hybrid moderation: the *ML classifier* (TF-IDF + LR on PAN12 + synthetic data) generalises
-to unseen wording. This module is an *explainable rule leg* — it cannot list every harmful
-phrase in natural language. Expand training data and retrain for broader AI coverage; use
-rules for high-precision patterns and transparency in reports.
-
-Coursework / demo only — not production-safe.
-"""
-
-# Substring match on lowercased full conversation. Prefer multi-word entries to avoid
-# false hits (e.g. "pics" inside "olympics", "age" inside "damage").
+# Substring match on lowercased thread text (multi-word phrases reduce false hits).
 RISK_KEYWORDS = [
-    # --- meetings / isolation ---
     "meet up",
     "meet me",
     "lets meet",
@@ -35,7 +24,6 @@ RISK_KEYWORDS = [
     "sneak out",
     "run away",
     "leave your parents",
-    # --- secrecy (multi-word) ---
     "dont tell",
     "do not tell",
     "have to tell anyone",
@@ -49,7 +37,6 @@ RISK_KEYWORDS = [
     "stay quiet",
     "delete the chat",
     "clear your history",
-    # --- age / youth (avoid bare "age") ---
     "how old",
     "years old",
     "underage",
@@ -57,7 +44,6 @@ RISK_KEYWORDS = [
     "middle school",
     "high school freshman",
     "too young",
-    # --- imagery / cam ---
     "webcam",
     "facetime",
     "video call",
@@ -71,7 +57,6 @@ RISK_KEYWORDS = [
     "take it off",
     "turn around",
     "pose for",
-    # --- contact / handles ---
     "phone number",
     "your number",
     "text me",
@@ -85,7 +70,6 @@ RISK_KEYWORDS = [
     "wickr",
     "email me",
     "drop your @",
-    # --- sexual pressure / CSA-relevant (explicit terms for lab prototype) ---
     "nude",
     "nudes",
     "naked",
@@ -101,7 +85,6 @@ RISK_KEYWORDS = [
     "turn you on",
     "lose your virginity",
     "first time sex",
-    # --- money / gifts (grooming vector) ---
     "gift card",
     "venmo",
     "paypal",
@@ -111,7 +94,6 @@ RISK_KEYWORDS = [
     "i'll buy you",
     "allowance",
     "if you send",
-    # --- emotional manipulation ---
     "nobody understands",
     "only i understand",
     "special friendship",
@@ -124,7 +106,6 @@ RISK_KEYWORDS = [
     "hurt my feelings",
     "ill leave",
     "i'll leave",
-    # --- discomfort signals (often in risky threads) ---
     "uncomfortable",
     "my parents",
     "tell my mum",
@@ -132,14 +113,13 @@ RISK_KEYWORDS = [
     "tell my dad",
     "going to report",
     "block you",
-    # --- self-harm / coercion (high risk context) ---
     "kill yourself",
     "kys",
     "hurt yourself",
     "cut yourself",
 ]
 
-# Short tokens matched with word boundaries (avoids "age" in "damage", "pic" in "epic").
+# Short tokens; word-boundary match only.
 RISK_KEYWORDS_BOUNDARY = [
     "alone",
     "secret",
@@ -153,9 +133,7 @@ RISK_KEYWORDS_BOUNDARY = [
     "porn",
 ]
 
-# High-signal grooming / coercion (substring on lowercased text).
 GROOMING_PHRASES = [
-    # secrecy
     "just me and you",
     "dont tell anybody",
     "don't tell anybody",
@@ -172,7 +150,6 @@ GROOMING_PHRASES = [
     "not a big deal if",
     "won't tell anyone",
     "wont tell anyone",
-    # sexual slang / pressure
     "chebs",
     "send nudes",
     "send noodz",
@@ -184,7 +161,6 @@ GROOMING_PHRASES = [
     "finger you",
     "eat you out",
     "get you pregnant",
-    # flattery grooming
     "hello beautiful",
     "hey beautiful",
     "hi beautiful",
@@ -198,7 +174,6 @@ GROOMING_PHRASES = [
     "older guys",
     "older man",
     "experienced guy",
-    # isolation from caregivers
     "when they are asleep",
     "when parents sleep",
     "after your parents",
@@ -206,7 +181,6 @@ GROOMING_PHRASES = [
     "dont wake",
     "skip class",
     "fake sick",
-    # tech-facilitated
     "disappearing message",
     "vanish mode",
     "burner phone",
@@ -215,7 +189,6 @@ GROOMING_PHRASES = [
     "private story",
 ]
 
-# Violence, terror, severe harm — substring phrases.
 THREAT_PHRASES = [
     "bomb the",
     "going to bomb",
@@ -288,7 +261,6 @@ AGE_CUE_PATTERNS = [
 
 
 def _boundary_keyword_hits(text_lower: str) -> tuple[int, list[str]]:
-    """Count short risky tokens with word boundaries."""
     hits: list[str] = []
     n = 0
     for kw in RISK_KEYWORDS_BOUNDARY:
@@ -301,7 +273,6 @@ def _boundary_keyword_hits(text_lower: str) -> tuple[int, list[str]]:
 
 
 def _threat_score(text_lower: str, conversation_text: str) -> tuple[float, dict]:
-    """Score 0–1 for violence / terrorism / mass-harm style content."""
     hits: list[str] = []
     score = 0.0
 
@@ -332,7 +303,6 @@ def _threat_score(text_lower: str, conversation_text: str) -> tuple[float, dict]
 
 
 def _fold_apostrophe(s: str) -> str:
-    """Normalize so 'dont' patterns match 'don't' in user text."""
     return s.replace("'", "").replace("\u2019", "")
 
 
@@ -350,7 +320,6 @@ def _grooming_phrase_score(fold: str) -> tuple[float, list[str]]:
 
 
 def _minor_stated_solo_age(conversation_text: str) -> bool:
-    """A line is only a small integer age (1–17), e.g. `user1: 13`."""
     for m in re.finditer(r"(?m)^user\d+:\s*(\d{1,2})\s*$", conversation_text.strip(), re.I):
         try:
             a = int(m.group(1))
@@ -377,7 +346,7 @@ def _minor_age_natural_in_fold(fold: str) -> bool:
     return bool(_RE_MINOR_AGE_STATEMENT.search(fold))
 
 
-# Parent *disclosure* / approval (prosocial) vs *boundary worry* (grooming-relevant).
+# "Told parents / they said ok" lines are not treated as boundary worry.
 _PROSOCIAL_PARENT_PHRASES = (
     "let me tell my parents",
     "gonna tell my parents",
@@ -447,10 +416,6 @@ def _conversation_has_parent_boundary_worry(conversation_text: str) -> bool:
 
 
 def _age_disclosure_cluster(fold: str, conversation_text: str) -> tuple[float, list[str]]:
-    """
-    High-signal combo: age question + minor states age + adult states age + discomfort/secrecy.
-    Catches grooming arcs where individual phrases are split across messages.
-    """
     hits: list[str] = []
     if "how old are you" not in fold:
         return 0.0, hits
@@ -483,10 +448,6 @@ def _age_disclosure_cluster(fold: str, conversation_text: str) -> tuple[float, l
 
 
 def _scam_financial_cluster(fold: str) -> tuple[float, list[str]]:
-    """
-    Advance-fee / impersonation scams: tax + gift cards, crypto doubling, fake job fees.
-    Short threads need a floor score (keyword density alone stays too low).
-    """
     hits: list[str] = []
     s = 0.0
     gift = "gift card" in fold or "gift cards" in fold
@@ -525,9 +486,6 @@ def _scam_financial_cluster(fold: str) -> tuple[float, list[str]]:
 
 
 def _image_pressure_cluster(fold: str) -> tuple[float, list[str]]:
-    """
-    Coercive image requests + secrecy or persistence (short threads, low keyword density).
-    """
     hits: list[str] = []
     pic = any(
         p in fold
@@ -563,12 +521,6 @@ def _image_pressure_cluster(fold: str) -> tuple[float, list[str]]:
 
 
 def detect_grooming_sequence(messages: list[str]) -> dict:
-    """
-    Ordered scan of one line per message (e.g. ``user2: text``). Detects grooming-arc
-    components: flattery, age question, minor/adult age statements, parent pushback,
-    isolation, meeting/run-away language. High-confidence path when minor + adult ages
-    appear with isolation or meeting escalation.
-    """
     flattery = age_q = minor = adult = parent_r = iso = meet = False
     first: dict[str, int] = {}
 
@@ -643,7 +595,6 @@ def detect_grooming_sequence(messages: list[str]) -> dict:
     )
     prosocial_parent_context = bool(prosocial_parent and not minor and not adult)
     if prosocial_parent_context:
-        # Peer plans with parental transparency; meeting + age small-talk is not an arc.
         score = min(score, 0.33)
 
     flags = {
@@ -726,7 +677,7 @@ def rule_score_for_text(
         float(gs["score"]),
     )
     if gs.get("prosocial_parent_context"):
-        grooming_score = min(grooming_score, 0.18)
+        grooming_score = min(grooming_score, 0.18)  # cap when parents looped in, no ages
 
     threat_s, threat_meta = _threat_score(text_lower, conversation_text)
     hits["threat"] = threat_meta

@@ -17,7 +17,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Social Safety Prototype", lifespan=lifespan)
+app = FastAPI(title="Social safety API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

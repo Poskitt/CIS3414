@@ -1,7 +1,3 @@
-/**
- * Small shared helpers for the static frontend.
- */
-
 function el(id) {
   return document.getElementById(id);
 }

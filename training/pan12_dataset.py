@@ -1,11 +1,4 @@
-"""
-Load PAN12 sexual-predator-identification XML + Problem 1 ground truth.
-
-Uses iterparse so ~400MB XML does not need to fit in RAM.
-Conversation text format: one line per message ``author_id: message text`` (matches app-style threading).
-
-This bundle is the official *test* corpus; using it for training has methodological caveats (see README).
-"""
+# PAN12 XML via iterparse (large files). Problem 1 author list = predator label.
 from __future__ import annotations
 
 import random
@@ -38,9 +31,6 @@ def iter_pan12_conversations(
     max_chars: int = 80_000,
     max_messages: int = 400,
 ) -> Iterator[tuple[str, int]]:
-    """
-    Yield (conversation_text, label) where label=1 if any author is in predator_authors.
-    """
     for _event, elem in ET.iterparse(str(xml_path), events=("end",)):
         tag = elem.tag.split("}")[-1]
         if tag != "conversation":
@@ -132,13 +122,6 @@ def resolve_pan12_corpus_dir(
     project_root: Path,
     training_dir: Path,
 ) -> Path:
-    """
-    Find the PAN12 bundle directory. Tries, in order:
-    - Explicit path if absolute and exists
-    - project_root / relative path (so ``training\\...`` works no matter the CWD)
-    - training_dir / relative path
-    - training_dir / PAN12_FOLDER_NAME (default bundle location)
-    """
     tried: list[str] = []
     candidates: list[Path] = []
 

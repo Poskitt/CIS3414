@@ -1,7 +1,3 @@
-/* --------------------------------------------------------------------------
-   Shared design tokens and base styles (chat + moderator)
-   -------------------------------------------------------------------------- */
-
 :root {
   --bg: #0f1419;
   --panel: #1a2332;
@@ -18,7 +14,6 @@
   --radius-xl: 12px;
   --font-sans: "Segoe UI", system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "Consolas", monospace;
-  /* Scrollbars (between panel and border tones) */
   --scrollbar-size: 10px;
   --scrollbar-thumb: #3a4758;
   --scrollbar-thumb-hover: #4d5d73;
@@ -136,10 +131,7 @@ a:hover {
   color: var(--muted);
 }
 
-/* --------------------------------------------------------------------------
-   Scrollbars - Firefox + WebKit (Chrome, Edge, Safari)
-   -------------------------------------------------------------------------- */
-
+/* scrollbars: Firefox + WebKit */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--bg);

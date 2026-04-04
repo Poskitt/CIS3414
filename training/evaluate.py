@@ -1,9 +1,4 @@
-"""
-Train on 80%, hold out 20% validation: multiclass metrics + tier threshold tuning on fused scores.
-
-Writes tuned tier_safe_max / tier_suspicious_max into app/config.py (marked block).
-Run from project root: python -m training.evaluate --help
-"""
+# Validate model, tune tier cuts in app/config.py, refresh joblib artifact.
 from __future__ import annotations
 
 import argparse
@@ -47,7 +42,6 @@ def fused_val_scores(
     model,
     X_val: list[str],
 ) -> tuple[list[float], list[float], list[float]]:
-    """Returns dynamic fused, static fused, and ML-only scores per row (raw text for rules)."""
     dyn: list[float] = []
     stat: list[float] = []
     ml_only: list[float] = []
@@ -76,7 +70,6 @@ def tune_tier_thresholds(
     val_scores: list[float],
     gold_tiers: list[str],
 ) -> tuple[float, float, float]:
-    """Grid-search (safe_max, suspicious_max) to maximize macro-F1 on 3 tiers."""
     labels = ["safe", "suspicious", "high_risk"]
     best_f1 = -1.0
     best_pair = (0.35, 0.65)
@@ -98,16 +91,14 @@ def tier_accuracy(gold: list[str], pred: list[str]) -> float:
 def patch_config_thresholds(t_safe: float, t_susp: float) -> None:
     text = CONFIG_PATH.read_text(encoding="utf-8")
     block = (
-        "    # --- begin auto tier thresholds (training/evaluate.py) ---\n"
+        "    # training/evaluate.py overwrites the next two lines\n"
         f"    tier_safe_max: float = {t_safe:.4f}\n"
         f"    tier_suspicious_max: float = {t_susp:.4f}\n"
-        "    # --- end auto tier thresholds ---\n"
     )
     pattern = (
-        r"    # --- begin auto tier thresholds \(training/evaluate\.py\) ---\n"
+        r"    # training/evaluate\.py overwrites the next two lines\n"
         r"    tier_safe_max: float = [\d.]+\n"
         r"    tier_suspicious_max: float = [\d.]+\n"
-        r"    # --- end auto tier thresholds ---\n"
     )
     if not re.search(pattern, text):
         raise RuntimeError("Could not find tier threshold block in app/config.py")

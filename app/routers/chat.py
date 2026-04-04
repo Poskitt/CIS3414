@@ -52,7 +52,7 @@ def build_summary(store: AppStore, conv) -> ConversationSummaryOut:
     )
 
 
-# (title, lines) where each line is ("a" | "b", message) for alice / first user, bob / second.
+# Bootstrap demo chats: "a"/"b" -> first/second non-moderator user.
 _DEMO_CONVERSATIONS: list[tuple[str, list[tuple[str, str]]]] = [
     (
         "Homework group (safe)",

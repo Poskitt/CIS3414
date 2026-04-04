@@ -10,11 +10,6 @@ def fuse_scores(
     age_disclosure_cluster: bool = False,
     grooming_sequence_high: bool = False,
 ) -> float:
-    """
-    Dynamic fusion in [0, 1]. Strong rule / grooming-cluster signals up-weight rules;
-    grooming sequence high-confidence up-weights rules further; very confident ML
-    up-weights ML; quiet threads get a slight downward nudge.
-    """
     ml_score = max(0.0, min(1.0, float(ml_score)))
     rule_score = max(0.0, min(1.0, float(rule_score)))
 

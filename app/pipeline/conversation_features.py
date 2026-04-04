@@ -1,15 +1,10 @@
-"""
-Conversation-level signals appended as text before ML vectorization (train + inference).
-
-Keeps rules on raw thread text; only the ML leg sees [FEATURES] block.
-"""
+# Extra lines appended for TF-IDF only (rules use raw thread).
 from __future__ import annotations
 
 import re
 
 from app.pipeline.rules import RISK_KEYWORDS
 
-# Subset of rule keywords long enough to count as "risk terms" in the tail / repetition heuristics.
 _FEATURE_TERMS: tuple[str, ...] = tuple(
     kw for kw in RISK_KEYWORDS if len(kw) >= 4
 )[:45]
@@ -68,7 +63,6 @@ def first_risk_speaker(text: str) -> str:
 
 
 def build_feature_block(text: str) -> str:
-    """Structured suffix appended to thread text for TF-IDF (train + API)."""
     n = count_messages_in_thread(text)
     sp = unique_speakers(text)
     late = late_stage_risk_term_count(text)
