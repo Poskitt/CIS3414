@@ -26,6 +26,11 @@ class RiskOut(BaseModel):
     final_score: float
     tier: str
     rule_hits: dict[str, Any] | None = None
+    fusion_ml_weight: float | None = None
+    fusion_rule_weight: float | None = None
+    ml_confidence_band: str | None = None
+    rule_trigger_summary: list[str] | None = None
+    message_markers: list[list[str]] | None = None
 
 
 class ConversationSummaryOut(BaseModel):
@@ -66,6 +71,8 @@ class ModeratorCaseOut(BaseModel):
     reason: str | None
     moderator_note: str | None
     priority: int
+    review_stage: str | None = None
+    workflow_display: str = "Pending"
     created_at: datetime
     preview: str
     latest_risk: RiskOut | None

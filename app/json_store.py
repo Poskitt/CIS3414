@@ -82,6 +82,8 @@ def _ns_risk(d: dict[str, Any]) -> SimpleNamespace:
         final_score=d["final_score"],
         tier=d["tier"],
         rule_hits=d.get("rule_hits"),
+        fusion_ml_weight=d.get("fusion_ml_weight"),
+        fusion_rule_weight=d.get("fusion_rule_weight"),
         created_at=_parse_dt(d["created_at"]),
     )
 
@@ -95,6 +97,7 @@ def _ns_case(d: dict[str, Any]) -> SimpleNamespace:
         reason=d.get("reason"),
         moderator_note=d.get("moderator_note"),
         priority=d["priority"],
+        review_stage=d.get("review_stage"),
         created_at=_parse_dt(d["created_at"]),
         updated_at=_parse_dt(d["updated_at"]) if d.get("updated_at") else None,
     )
@@ -474,6 +477,9 @@ class AppStore:
         final_score: float,
         tier: str,
         rule_hits: dict[str, Any] | None,
+        *,
+        fusion_ml_weight: float | None = None,
+        fusion_rule_weight: float | None = None,
     ) -> SimpleNamespace:
         def op(data: dict[str, Any]) -> SimpleNamespace:
             rid = self._next_id(data, "risk_assessment")
@@ -488,6 +494,10 @@ class AppStore:
             }
             if rule_hits is not None:
                 row["rule_hits"] = rule_hits
+            if fusion_ml_weight is not None:
+                row["fusion_ml_weight"] = round(float(fusion_ml_weight), 4)
+            if fusion_rule_weight is not None:
+                row["fusion_rule_weight"] = round(float(fusion_rule_weight), 4)
             data["risk_assessments"].append(row)
             return _ns_risk(row)
 
@@ -524,6 +534,7 @@ class AppStore:
                     "reason": reason,
                     "moderator_note": None,
                     "priority": priority,
+                    "review_stage": None,
                     "created_at": now,
                     "updated_at": now,
                 }

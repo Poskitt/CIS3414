@@ -11,6 +11,10 @@ body.chat-page {
   flex-direction: column;
 }
 
+.chat-page > .privacy-strip {
+  flex-shrink: 0;
+}
+
 .chat-layout {
   display: flex;
   flex: 1;
@@ -170,12 +174,34 @@ body.chat-page {
 .thread__msg {
   margin-bottom: 0.6rem;
   font-size: 0.95rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+
+.thread__msg--flagged {
+  border-color: rgba(240, 173, 78, 0.45);
+  background: rgba(240, 173, 78, 0.06);
 }
 
 .thread__meta {
   font-size: 0.75rem;
   color: var(--muted);
   margin-bottom: 0.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.thread__flag {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--warn);
+  border: 1px solid rgba(240, 173, 78, 0.5);
+  padding: 0.08rem 0.35rem;
+  border-radius: 999px;
 }
 
 /* Composer */
@@ -274,4 +300,74 @@ body.chat-page {
   gap: 0.5rem;
   flex-wrap: wrap;
   margin-top: 0.75rem;
+}
+
+/* Hybrid decision panel */
+.hybrid-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.88rem;
+}
+
+.hybrid-panel__title {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.hybrid-panel__how {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.hybrid-panel__grid {
+  display: grid;
+  gap: 0.25rem 1rem;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+}
+
+.hybrid-panel__row {
+  display: contents;
+}
+
+.hybrid-panel__k {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.hybrid-panel__row--emph .hybrid-panel__k,
+.hybrid-panel__row--emph span:last-child {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.hybrid-panel__summary {
+  margin: 0;
+  padding-left: 1.1rem;
+  line-height: 1.55;
+}
+
+.hybrid-panel__summary li {
+  margin-bottom: 0.2rem;
+}
+
+.hybrid-tag {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.hybrid-panel__muted {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
 }

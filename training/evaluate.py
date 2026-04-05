@@ -53,14 +53,14 @@ def fused_val_scores(
         age_cluster = bool(hits.get("age_disclosure_cluster"))
         gs = hits.get("grooming_sequence") or {}
         grooming_high = gs.get("label") == "grooming_high_confidence"
-        d = fuse_scores(
+        fused, _, _ = fuse_scores(
             ml_s,
             rule_s,
             age_disclosure_cluster=age_cluster,
             grooming_sequence_high=grooming_high,
         )
         s = static_fuse(ml_s, rule_s)
-        dyn.append(d)
+        dyn.append(fused)
         stat.append(s)
         ml_only.append(ml_s)
     return dyn, stat, ml_only
@@ -244,6 +244,10 @@ def main() -> None:
         patch_config_thresholds(t_safe, t_susp)
 
     print("\n=== Summary (for report) ===")
+    print(
+        "UI and API expose ML score, rule score, adaptive fusion weights, and final weighted score "
+        "so assessors can see reasoning, not only tier labels."
+    )
     print(
         "Dynamic fusion up-weights rules when age_disclosure_cluster fires or rule_score>0.8, "
         "ML when ml_score>0.85, and nudges scores down when both ML and rules are low - "

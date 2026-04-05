@@ -160,3 +160,20 @@ a:hover {
 *::-webkit-scrollbar-corner {
   background: var(--bg);
 }
+
+.privacy-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--border);
+  background: rgba(26, 35, 50, 0.85);
+  line-height: 1.4;
+}
+
+.privacy-strip__icon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}

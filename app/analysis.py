@@ -6,7 +6,7 @@ from app.json_store import AppStore
 from app.pipeline.classifier import load_classifier, ml_risk_score
 from app.pipeline.conversation_features import augment_text_for_ml
 from app.pipeline.fusion import fuse_scores, tier_from_score
-from app.pipeline.rules import rule_score_for_text
+from app.pipeline.rules import per_message_line_markers, rule_score_for_text
 
 _pipe = None  # loaded once
 
@@ -49,12 +49,14 @@ def run_pipeline(
     text, n = thread_text(store, conversation_id, last_n)
     msg_lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     rule_s, hits = rule_score_for_text(text, n, messages=msg_lines)
+    hits = dict(hits)
+    hits["message_markers"] = per_message_line_markers(msg_lines)
     text_ml = augment_text_for_ml(text)
     ml_s = ml_risk_score(get_pipe(), text_ml)
     age_cluster = bool(hits.get("age_disclosure_cluster"))
     gs = hits.get("grooming_sequence") or {}
     grooming_high = gs.get("label") == "grooming_high_confidence"
-    final = fuse_scores(
+    final, fusion_w_ml, fusion_w_rule = fuse_scores(
         ml_s,
         rule_s,
         age_disclosure_cluster=age_cluster,
@@ -68,6 +70,8 @@ def run_pipeline(
         round(final, 4),
         tier,
         hits,
+        fusion_ml_weight=fusion_w_ml,
+        fusion_rule_weight=fusion_w_rule,
     )
     conv = store.get_conversation(conversation_id)
     if conv is not None:

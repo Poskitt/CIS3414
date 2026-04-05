@@ -9,7 +9,7 @@ def fuse_scores(
     *,
     age_disclosure_cluster: bool = False,
     grooming_sequence_high: bool = False,
-) -> float:
+) -> tuple[float, float, float]:
     ml_score = max(0.0, min(1.0, float(ml_score)))
     rule_score = max(0.0, min(1.0, float(rule_score)))
 
@@ -29,7 +29,7 @@ def fuse_scores(
     if rule_score < 0.1 and ml_score < 0.4:
         fused *= 0.92
 
-    return float(max(0.0, min(1.0, fused)))
+    return float(max(0.0, min(1.0, fused))), w_m, w_r
 
 
 def tier_from_score(score: float) -> str:

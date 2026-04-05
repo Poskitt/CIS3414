@@ -12,6 +12,79 @@ function tierKey(t) {
   return "safe";
 }
 
+function tierHuman(tier) {
+  if (tier === "high_risk") return "HIGH RISK";
+  if (tier === "suspicious") return "SUSPICIOUS";
+  if (tier === "safe") return "SAFE";
+  return tier || "n/a";
+}
+
+function bandLabel(band) {
+  if (!band) return "n/a";
+  return band.charAt(0).toUpperCase() + band.slice(1).toUpperCase();
+}
+
+function renderHybridPanel(risk) {
+  const panel = el("hybridPanel");
+  if (!risk) {
+    panel.innerHTML =
+      '<p class="hybrid-panel__muted">No risk assessment yet. Send a message or choose Re-analyze.</p>';
+    return;
+  }
+  const wml = risk.fusion_ml_weight;
+  const wrule = risk.fusion_rule_weight;
+  let weightsBlock;
+  if (wml != null && wrule != null) {
+    const pml = Math.round(Number(wml) * 100);
+    const prule = Math.round(Number(wrule) * 100);
+    weightsBlock = `
+      <div class="hybrid-panel__row">
+        <span class="hybrid-panel__k">Fusion weights</span>
+        <span class="mono">ML ${pml}% · Rules ${prule}%</span>
+      </div>`;
+  } else {
+    weightsBlock = `
+      <div class="hybrid-panel__row">
+        <span class="hybrid-panel__k">Fusion weights</span>
+        <span class="muted mono">Re-analyze to store current weights</span>
+      </div>`;
+  }
+  const triggers = (risk.rule_trigger_summary || [])
+    .map((t) => escapeHtml(t))
+    .join(" · ");
+  const triggerText = triggers || "—";
+  const aiBand = bandLabel(risk.ml_confidence_band);
+
+  panel.innerHTML = `
+    <h3 class="hybrid-panel__title">Hybrid system (ML + rules)</h3>
+    <p class="hybrid-panel__how">
+      Final score blends the ML detector with rule-based signals; weights shift when grooming or age-disclosure clusters fire.
+    </p>
+    <div class="hybrid-panel__grid">
+      <div class="hybrid-panel__row">
+        <span class="hybrid-panel__k">ML score</span>
+        <span class="mono">${Number(risk.ml_score).toFixed(2)}</span>
+      </div>
+      <div class="hybrid-panel__row">
+        <span class="hybrid-panel__k">Rule score</span>
+        <span class="mono">${Number(risk.rule_score).toFixed(2)}</span>
+      </div>
+      ${weightsBlock}
+      <div class="hybrid-panel__row hybrid-panel__row--emph">
+        <span class="hybrid-panel__k">Final (weighted)</span>
+        <span class="mono">${Number(risk.final_score).toFixed(2)}</span>
+      </div>
+    </div>
+    <ul class="hybrid-panel__summary" aria-label="Decision summary">
+      <li><strong>AI detection:</strong> <span class="hybrid-tag">${escapeHtml(aiBand)}</span> confidence</li>
+      <li><strong>Rule triggers:</strong> ${triggerText}</li>
+      <li><strong>Final decision:</strong>
+        <span class="risk-pill risk-pill--${tierKey(risk.tier)}">${escapeHtml(tierHuman(risk.tier))}</span>
+      </li>
+    </ul>
+  `;
+}
+
 function renderRisk(risk) {
   const labelEl = el("riskLabel");
   const banner = el("riskBanner");
@@ -98,20 +171,30 @@ function renderThread(data) {
   const thread = el("thread");
   thread.innerHTML = "";
 
-  for (const m of data.messages || []) {
+  const markers = (data.latest_risk && data.latest_risk.message_markers) || [];
+  (data.messages || []).forEach((m, i) => {
     const u = state.users.find((x) => x.id === m.sender_id);
     const name = u ? u.username : `user ${m.sender_id}`;
     const div = document.createElement("div");
+    const marks = markers[i] || [];
     div.className = "thread__msg";
+    if (marks.length) {
+      div.classList.add("thread__msg--flagged");
+      div.title = `Risk cues on this line: ${marks.join(", ")}`;
+    }
+    const flagHtml = marks.length
+      ? `<span class="thread__flag" title="${escapeHtml(marks.join(", "))}">Risk cue</span>`
+      : "";
     div.innerHTML = `
-      <div class="thread__meta">${escapeHtml(name)}</div>
+      <div class="thread__meta">${escapeHtml(name)}${flagHtml}</div>
       <div>${escapeHtml(m.content)}</div>
     `;
     thread.appendChild(div);
-  }
+  });
 
   thread.scrollTop = thread.scrollHeight;
   renderRisk(data.latest_risk);
+  renderHybridPanel(data.latest_risk);
 
   const note = el("restrictNote");
   note.textContent = data.send_restricted

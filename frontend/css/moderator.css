@@ -78,3 +78,94 @@
 .mod-detail .btn-row {
   margin-top: 0.75rem;
 }
+
+/* Human-readable flag explanation (no raw JSON) */
+.mod-flag-explanation {
+  margin-bottom: 0.75rem;
+}
+
+.mod-why-flagged__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.mod-why-flagged__sub {
+  margin: 0.65rem 0 0.35rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.mod-why-flagged__dl {
+  margin: 0;
+  display: grid;
+  gap: 0.35rem 1rem;
+  grid-template-columns: auto 1fr;
+  font-size: 0.88rem;
+}
+
+.mod-why-flagged__dl > div {
+  display: contents;
+}
+
+.mod-why-flagged__dl dt {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.mod-why-flagged__dl dd {
+  margin: 0;
+}
+
+.mod-why-flagged__dl--wide dt,
+.mod-why-flagged__dl--wide dd {
+  grid-column: 1 / -1;
+}
+
+.mod-why-flagged__dl--wide dd {
+  margin-top: 0.15rem;
+}
+
+.mod-why-flagged__triggers {
+  margin: 0;
+  padding-left: 1.15rem;
+  line-height: 1.45;
+  font-size: 0.88rem;
+}
+
+.mod-why-flagged__triggers li {
+  margin-bottom: 0.25rem;
+}
+
+.mod-why-flagged__empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.workflow-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.workflow-badge--pending {
+  border-color: rgba(139, 155, 180, 0.45);
+}
+
+.workflow-badge--review {
+  color: var(--accent);
+  border-color: rgba(61, 139, 253, 0.45);
+  background: rgba(61, 139, 253, 0.1);
+}

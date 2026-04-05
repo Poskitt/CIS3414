@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.analysis import run_pipeline
 from app.json_store import AppStore, get_store_dep
+from app.risk_serialize import risk_to_out
 from app.schemas import (
     BootstrapOut,
     ConversationOut,
@@ -11,23 +12,10 @@ from app.schemas import (
     CreateConversationIn,
     FlagIn,
     MessageOut,
-    RiskOut,
     SendMessageIn,
 )
 
 router = APIRouter(prefix="/api", tags=["chat"])
-
-
-def risk_out(r) -> RiskOut | None:
-    if r is None:
-        return None
-    return RiskOut(
-        ml_score=r.ml_score,
-        rule_score=r.rule_score,
-        final_score=r.final_score,
-        tier=r.tier,
-        rule_hits=r.rule_hits,
-    )
 
 
 def build_summary(store: AppStore, conv) -> ConversationSummaryOut:
@@ -309,7 +297,7 @@ def send_message(body: SendMessageIn, store: AppStore = Depends(get_store_dep)):
     conv = store.get_conversation(body.conversation_id)
     return {
         "message": MessageOut.model_validate(msg),
-        "risk": risk_out(assessment),
+        "risk": risk_to_out(assessment),
         "send_restricted": conv.send_restricted if conv else False,
     }
 
@@ -327,7 +315,7 @@ def get_conversation(conversation_id: int, store: AppStore = Depends(get_store_d
         title=conv.title,
         send_restricted=conv.send_restricted,
         messages=[MessageOut.model_validate(m) for m in msgs],
-        latest_risk=risk_out(lr),
+        latest_risk=risk_to_out(lr),
     )
 
 
@@ -337,7 +325,7 @@ def analyze_conversation(conversation_id: int, store: AppStore = Depends(get_sto
     if conv is None:
         raise HTTPException(404, "conversation not found")
     assessment = run_pipeline(store, conversation_id)
-    return {"assessment": risk_out(assessment)}
+    return {"assessment": risk_to_out(assessment)}
 
 
 @router.post("/conversations/{conversation_id}/flag")

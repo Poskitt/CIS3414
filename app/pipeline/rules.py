@@ -615,6 +615,36 @@ def detect_grooming_sequence(messages: list[str]) -> dict:
     }
 
 
+def per_message_line_markers(lines: list[str]) -> list[list[str]]:
+    markers: list[list[str]] = []
+    for raw in lines:
+        f = _fold_apostrophe(raw.lower())
+        content = re.sub(r"^\s*user\d+\s*:\s*", "", f, count=1, flags=re.I)
+        found: list[str] = []
+        for kw in RISK_KEYWORDS:
+            kf = _fold_apostrophe(kw.lower())
+            if kf in content and kw not in found:
+                found.append(kw)
+                if len(found) >= 6:
+                    break
+        if len(found) < 8:
+            for phrase in GROOMING_PHRASES:
+                p = _fold_apostrophe(phrase.lower())
+                if p in content:
+                    label = phrase if len(phrase) <= 36 else phrase[:33] + "..."
+                    tag = f"phrase:{label}"
+                    if tag not in found:
+                        found.append(tag)
+                    if len(found) >= 8:
+                        break
+        for ph in THREAT_PHRASES:
+            if ph in content:
+                found.append(f"threat:{ph}")
+                break
+        markers.append(found[:10])
+    return markers
+
+
 def rule_score_for_text(
     conversation_text: str,
     num_messages: int,
