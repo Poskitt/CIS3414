@@ -1,7 +1,8 @@
-# Short labels for hybrid scoring UI (from rule_hits).
+# Helper labels for the hybrid scoring UI.
 
 
 def ml_confidence_band(ml_score: float) -> str:
+    # Maps the ML score to a simple confidence band for display.
     if ml_score >= 0.75:
         return "high"
     if ml_score >= 0.4:
@@ -10,11 +11,13 @@ def ml_confidence_band(ml_score: float) -> str:
 
 
 def _cluster_lines(hits: dict, key: str) -> list[str]:
+    # Returns cluster entries as a list, or an empty list when missing.
     v = hits.get(key)
     return v if isinstance(v, list) else []
 
 
 def rule_trigger_summary(hits: dict) -> list[str]:
+    # Builds short human-readable trigger summaries from stored rule hits.
     if not hits:
         return ["No rule detail stored"]
     out: list[str] = []

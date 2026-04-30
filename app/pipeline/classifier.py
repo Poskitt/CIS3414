@@ -9,7 +9,7 @@ from sklearn.pipeline import Pipeline
 
 from app.config import settings
 
-# Multiclass label -> scalar harm for fusion (0..1).
+# Maps class labels to harm severity for score fusion.
 MULTICLASS_SEVERITY: dict[int, float] = {
     0: 0.0,
     1: 0.42,
@@ -20,15 +20,18 @@ MULTICLASS_SEVERITY: dict[int, float] = {
 
 
 def _legacy_paths() -> tuple[Path, Path]:
+    # Returns fallback artifact paths from the older model format.
     d = settings.artifacts_dir
     return d / "vectorizer.joblib", d / "model.joblib"
 
 
 def _calibrated_path() -> Path:
+    # Returns the current calibrated pipeline artifact path.
     return settings.artifacts_dir / "calibrated_pipeline.joblib"
 
 
 def load_classifier() -> Pipeline | CalibratedClassifierCV | None:
+    # Loads the best available classifier artifact, or None if missing.
     d = settings.artifacts_dir
     d.mkdir(parents=True, exist_ok=True)
     cal_path = _calibrated_path()
@@ -43,6 +46,7 @@ def load_classifier() -> Pipeline | CalibratedClassifierCV | None:
 
 
 def _classes_for_pipe(pipe) -> list:
+    # Reads class labels from either a pipeline or direct classifier object.
     if hasattr(pipe, "named_steps"):
         clf = pipe.named_steps["clf"]
         return list(getattr(clf, "classes_", []))
@@ -50,6 +54,7 @@ def _classes_for_pipe(pipe) -> list:
 
 
 def ml_risk_score(pipe, conversation_text: str) -> float:
+    # Converts model probabilities into a single 0..1 ML risk score.
     if pipe is None or not conversation_text.strip():
         return 0.35
     proba = pipe.predict_proba([conversation_text])[0]

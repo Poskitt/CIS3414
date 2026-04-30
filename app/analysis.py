@@ -12,6 +12,7 @@ _pipe = None  # loaded once
 
 
 def get_pipe():
+    # Lazily loads and caches the classifier for reuse.
     global _pipe
     if _pipe is None:
         _pipe = load_classifier()
@@ -19,6 +20,7 @@ def get_pipe():
 
 
 def thread_text(store: AppStore, conversation_id: int, last_n: int | None = None) -> tuple[str, int]:
+    # Builds thread text in userX: message format and returns message count.
     rows = store.list_messages(conversation_id)
     if last_n is not None and last_n > 0:
         rows = rows[-last_n:]
@@ -29,6 +31,7 @@ def thread_text(store: AppStore, conversation_id: int, last_n: int | None = None
 def upsert_moderation_case(
     store: AppStore, conversation_id: int, tier: str, source: str = "system"
 ) -> None:
+    # Creates or updates an open moderation case for suspicious or high-risk threads.
     if tier not in ("suspicious", "high_risk"):
         return
     existing = store.find_open_case(conversation_id)
@@ -45,7 +48,7 @@ def upsert_moderation_case(
 def run_pipeline(
     store: AppStore, conversation_id: int, last_n: int | None = None
 ) -> SimpleNamespace:
-    # rules on raw thread; ML on augmented text; then fuse and persist tier
+    # Runs rules and ML, fuses scores, stores assessment, and updates moderation state.
     text, n = thread_text(store, conversation_id, last_n)
     msg_lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     rule_s, hits = rule_score_for_text(text, n, messages=msg_lines)

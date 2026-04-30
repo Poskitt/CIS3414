@@ -5,6 +5,7 @@ from app.schemas import RiskOut
 
 
 def risk_to_out(r) -> RiskOut | None:
+    # Converts a stored risk row into the API response schema.
     if r is None:
         return None
     hits = r.rule_hits or {}

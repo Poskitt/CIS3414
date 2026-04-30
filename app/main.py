@@ -13,6 +13,7 @@ from app.routers import chat, moderation
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    # Ensures storage is ready before requests are served.
     init_store()
     yield
 

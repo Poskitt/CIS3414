@@ -2,437 +2,145 @@ from __future__ import annotations
 
 import re
 
-# Substring match on lowercased thread text (multi-word phrases reduce false hits).
-RISK_KEYWORDS = [
-    "meet up",
-    "meet me",
-    "lets meet",
-    "let's meet",
-    "pick you up",
-    "pick u up",
-    "come over",
-    "come to my",
-    "your house",
-    "your home",
-    "where do you live",
-    "what school",
-    "which school",
-    "alone together",
-    "just us",
-    "when nobody",
-    "when no one is",
-    "sneak out",
-    "run away",
-    "leave your parents",
-    "dont tell",
-    "do not tell",
-    "have to tell anyone",
-    "have to tell anybody",
-    "dont have to tell",
-    "nobody needs to know",
-    "no one needs to know",
-    "dont let",
-    "keep this secret",
-    "our secret",
-    "stay quiet",
-    "delete the chat",
-    "clear your history",
-    "how old",
-    "years old",
-    "underage",
-    "minor",
-    "middle school",
-    "high school freshman",
-    "too young",
-    "webcam",
-    "facetime",
-    "video call",
-    "screen record",
-    "screenshot this",
-    "live pic",
-    "mirror pic",
-    "body shot",
-    "shirtless",
-    "in your underwear",
-    "take it off",
-    "turn around",
-    "pose for",
-    "phone number",
-    "your number",
-    "text me",
-    "whatsapp",
-    "telegram",
-    "discord",
-    "instagram",
-    "snapchat",
-    "add my snap",
-    "kik",
-    "wickr",
-    "email me",
-    "drop your @",
-    "nude",
-    "nudes",
-    "naked",
-    "nsfw",
-    "dick pic",
-    "send me a pic",
-    "send pic",
-    "send photo",
-    "show me your",
-    "flash me",
-    "touch yourself",
-    "moan for",
-    "turn you on",
-    "lose your virginity",
-    "first time sex",
-    "gift card",
-    "venmo",
-    "paypal",
-    "cashapp",
-    "send money",
-    "ill buy you",
-    "i'll buy you",
-    "allowance",
-    "if you send",
-    "nobody understands",
-    "only i understand",
-    "special friendship",
-    "mature for your age",
-    "act older",
-    "if you love me",
-    "prove you love",
-    "dont you trust",
-    "don't you trust",
-    "hurt my feelings",
-    "ill leave",
-    "i'll leave",
-    "uncomfortable",
-    "my parents",
-    "tell my mum",
-    "tell my mom",
-    "tell my dad",
-    "going to report",
-    "block you",
-    "kill yourself",
-    "kys",
-    "hurt yourself",
-    "cut yourself",
-]
-
-# Short tokens; word-boundary match only.
-RISK_KEYWORDS_BOUNDARY = [
-    "alone",
-    "secret",
-    "pics",
-    "picture",
-    "photo",
-    "snap",
-    "address",
-    "young",
-    "rape",
-    "porn",
-]
-
-GROOMING_PHRASES = [
-    "just me and you",
-    "dont tell anybody",
-    "don't tell anybody",
-    "dont tell anyone",
-    "don't tell anyone",
-    "have to tell anyone",
-    "have to tell anybody",
-    "dont have to tell",
-    "don't have to tell",
-    "nobody has to know",
-    "nobody will know",
-    "our little secret",
-    "between us",
-    "not a big deal if",
-    "won't tell anyone",
-    "wont tell anyone",
-    "chebs",
-    "send nudes",
-    "send noodz",
-    "lewd",
-    "horny for you",
-    "jerk off",
-    "suck my",
-    "blow me",
-    "finger you",
-    "eat you out",
-    "get you pregnant",
-    "hello beautiful",
-    "hey beautiful",
-    "hi beautiful",
-    "youre beautiful",
-    "you're beautiful",
-    "prettier than girls",
-    "special girl",
-    "special boy",
-    "boyfriend material",
-    "like a girlfriend",
-    "older guys",
-    "older man",
-    "experienced guy",
-    "when they are asleep",
-    "when parents sleep",
-    "after your parents",
-    "lock your door",
-    "dont wake",
-    "skip class",
-    "fake sick",
-    "disappearing message",
-    "vanish mode",
-    "burner phone",
-    "alt account",
-    "finsta",
-    "private story",
-]
-
-THREAT_PHRASES = [
-    "bomb the",
-    "going to bomb",
-    "blow up the",
-    "blow up a",
-    "blow up the school",
-    "school shooting",
-    "shoot up the",
-    "active shooter",
-    "mass shooting",
-    "terrorist",
-    "terror attack",
-    "detonate",
-    "shoot the president",
-    "kill the president",
-    "attack the capital",
-    "attack parliament",
-    "attack the government",
-    "martyr operation",
-    "jihad",
-    "infidel",
-    "kill everyone",
-    "die for the cause",
-    "stab you",
-    "stab them",
-    "kill you",
-    "murder you",
-    "kidnap",
-    "chloroform",
-    "pipe bomb",
-    "molotov",
-    "run them over",
-    "rape you",
-    "rape her",
-    "rape him",
-    "anthrax",
-    "ricin",
-    "sarin",
-    "chemical weapon",
-    "biological weapon",
-    "hostage",
-    "execute the",
-    "behead",
-    "lynch",
-    "genocide",
-    "ethnic cleansing",
-]
-
-THREAT_REGEX = [
-    re.compile(r"\bgoing\s+to\s+bomb\b", re.I),
-    re.compile(r"\bbomb\s+the\s+\w+", re.I),
-    re.compile(r"\b(i\s+will|i'm\s+going\s+to|we\s+will)\s+.*\bbomb\b", re.I),
-    re.compile(r"\battack\s+the\s+(capital|city|parliament|government)\b", re.I),
-    re.compile(r"\b(shoot|stab|kill)\s+(you|them|him|her|everyone)\b", re.I),
-    re.compile(r"\b(i'll|i\s+will)\s+\w*\s*(kill|hurt|shoot|stab)\b", re.I),
-]
-
-_RE_COME_ON = re.compile(r"\bcome on\b", re.I)
-
-AGE_CUE_PATTERNS = [
-    re.compile(r"\bhow\s+old\s+are\s+you\b", re.I),
-    re.compile(r"\b(i am|i'm|im)\s+\d{1,2}\b", re.I),
-    re.compile(r"\bare\s+you\s+\d{1,2}\b", re.I),
-    re.compile(r"\b(i'm|i am|im)\s+only\s+\d{1,2}\b", re.I),
-    re.compile(r"\b(i'm|i am|im)\s+a\s+\d{1,2}\s+year\s+old\b", re.I),
-    re.compile(r"\byears?\s+old\b", re.I),
-    re.compile(r"\bin\s+\d{1,2}(st|nd|rd|th)?\s+grade\b", re.I),
-    re.compile(r"\bgrade\s+\d{1,2}\b", re.I),
-]
+from app.pipeline.rule_lexicons import (
+    AGE_CUE_PATTERNS,
+    BOUNDARY_WORRY_PARENT_PHRASES,
+    GROOMING_PHRASES,
+    PROSOCIAL_PARENT_PHRASES,
+    RE_COME_ON,
+    RE_ADULT_AGE_STATEMENT,
+    RE_MINOR_AGE_STATEMENT,
+    RISK_KEYWORDS,
+    RISK_KEYWORDS_BOUNDARY,
+    THREAT_PHRASES,
+    THREAT_REGEX,
+)
 
 
-def _boundary_keyword_hits(text_lower: str) -> tuple[int, list[str]]:
-    hits: list[str] = []
-    n = 0
-    for kw in RISK_KEYWORDS_BOUNDARY:
-        pat = re.compile(r"(?<![a-z0-9])" + re.escape(kw) + r"(?![a-z0-9])", re.I)
-        found = pat.findall(text_lower)
-        if found:
-            hits.append(kw)
-            n += len(found)
-    return n, hits
+def _count_boundary_keyword_hits(lower_text: str) -> tuple[int, list[str]]:
+    matched_keywords: list[str] = []
+    total_hits = 0
+    for keyword in RISK_KEYWORDS_BOUNDARY:
+        pattern = re.compile(r"(?<![a-z0-9])" + re.escape(keyword) + r"(?![a-z0-9])", re.I)
+        matches = pattern.findall(lower_text)
+        if matches:
+            matched_keywords.append(keyword)
+            total_hits += len(matches)
+    return total_hits, matched_keywords
 
 
-def _threat_score(text_lower: str, conversation_text: str) -> tuple[float, dict]:
-    hits: list[str] = []
-    score = 0.0
+def _score_threat_language(lower_text: str, conversation_text: str) -> tuple[float, dict]:
+    threat_hits: list[str] = []
+    threat_score = 0.0
 
     for phrase in THREAT_PHRASES:
-        if phrase in text_lower:
-            score += 0.22
-            hits.append(f"phrase:{phrase}")
+        if phrase in lower_text:
+            threat_score += 0.22
+            threat_hits.append(f"phrase:{phrase}")
 
-    for pat in THREAT_REGEX:
-        if pat.search(conversation_text):
-            score += 0.35
-            hits.append(f"re:{pat.pattern[:48]}")
+    for pattern in THREAT_REGEX:
+        if pattern.search(conversation_text):
+            threat_score += 0.35
+            threat_hits.append(f"re:{pattern.pattern[:48]}")
 
-    if "bomb" in text_lower and any(
-        w in text_lower for w in ("capital", "parliament", "government", "president", "embassy", "airport")
+    if "bomb" in lower_text and any(
+        word in lower_text for word in ("capital", "parliament", "government", "president", "embassy", "airport")
     ):
-        score = max(score, 0.82)
-        hits.append("cooccur:bomb+civic_target")
+        threat_score = max(threat_score, 0.82)
+        threat_hits.append("cooccur:bomb+civic_target")
 
-    if "blow up" in text_lower and any(
-        w in text_lower for w in ("building", "capital", "school", "mall", "station", "bridge")
+    if "blow up" in lower_text and any(
+        word in lower_text for word in ("building", "capital", "school", "mall", "station", "bridge")
     ):
-        score = max(score, 0.78)
-        hits.append("cooccur:blowup+target")
+        threat_score = max(threat_score, 0.78)
+        threat_hits.append("cooccur:blowup+target")
 
-    score = float(max(0.0, min(1.0, score)))
-    return score, {"threat_hits": hits, "threat_score": round(score, 4)}
-
-
-def _fold_apostrophe(s: str) -> str:
-    return s.replace("'", "").replace("\u2019", "")
+    threat_score = float(max(0.0, min(1.0, threat_score)))
+    return threat_score, {"threat_hits": threat_hits, "threat_score": round(threat_score, 4)}
 
 
-def _grooming_phrase_score(fold: str) -> tuple[float, list[str]]:
-    found: list[str] = []
-    seen_folded: set[str] = set()
-    s = 0.0
+def _normalize_apostrophes(text: str) -> str:
+    return text.replace("'", "").replace("\u2019", "")
+
+
+def _score_grooming_phrases(normalized_text: str) -> tuple[float, list[str]]:
+    matched_phrases: list[str] = []
+    seen_normalized_phrases: set[str] = set()
+    phrase_score = 0.0
     for phrase in GROOMING_PHRASES:
-        p = _fold_apostrophe(phrase.lower())
-        if p in fold and p not in seen_folded:
-            seen_folded.add(p)
-            found.append(phrase)
-            s += 0.18
-    return min(1.0, s), found
+        normalized_phrase = _normalize_apostrophes(phrase.lower())
+        if normalized_phrase in normalized_text and normalized_phrase not in seen_normalized_phrases:
+            seen_normalized_phrases.add(normalized_phrase)
+            matched_phrases.append(phrase)
+            phrase_score += 0.18
+    return min(1.0, phrase_score), matched_phrases
 
 
-def _minor_stated_solo_age(conversation_text: str) -> bool:
-    for m in re.finditer(r"(?m)^user\d+:\s*(\d{1,2})\s*$", conversation_text.strip(), re.I):
+def _has_minor_age_only_line(conversation_text: str) -> bool:
+    for match in re.finditer(r"(?m)^user\d+:\s*(\d{1,2})\s*$", conversation_text.strip(), re.I):
         try:
-            a = int(m.group(1))
-            if 1 <= a <= 17:
+            age = int(match.group(1))
+            if 1 <= age <= 17:
                 return True
         except ValueError:
             pass
     return False
 
 
-_RE_MINOR_AGE_STATEMENT = re.compile(
-    r"\b(i\s*am|im)\s+(1[0-7]|[1-9])\b", re.I
-)
-_RE_ADULT_AGE_STATEMENT = re.compile(
-    r"\b(i\s*am|im)\s+(1[8-9]|[2-9][0-9])\b", re.I
-)
+def _has_adult_age_statement(normalized_text: str) -> bool:
+    return bool(RE_ADULT_AGE_STATEMENT.search(normalized_text))
 
 
-def _adult_stated_age_fold(fold: str) -> bool:
-    return bool(_RE_ADULT_AGE_STATEMENT.search(fold))
+def _has_minor_age_statement(normalized_text: str) -> bool:
+    return bool(RE_MINOR_AGE_STATEMENT.search(normalized_text))
 
 
-def _minor_age_natural_in_fold(fold: str) -> bool:
-    return bool(_RE_MINOR_AGE_STATEMENT.search(fold))
+def _mentions_parental_awareness(normalized_line: str) -> bool:
+    return any(phrase in normalized_line for phrase in PROSOCIAL_PARENT_PHRASES)
 
 
-# "Told parents / they said ok" lines are not treated as boundary worry.
-_PROSOCIAL_PARENT_PHRASES = (
-    "let me tell my parents",
-    "gonna tell my parents",
-    "going to tell my parents",
-    "ill tell my parents",
-    "ive told my parents",
-    "told my parents",
-    "telling my parents",
-    "ask my parents",
-    "asked my parents",
-    "asking my parents",
-    "check with my parents",
-    "checking with my parents",
-    "run it by my parents",
-    "parents said",
-    "parents say",
-    "my mom said",
-    "my dad said",
-    "they said its fine",
-    "they said ok",
-    "they said yes",
-    "theyre ok with",
-    "they are ok with",
-)
-_BOUNDARY_WORRY_PARENT_PHRASES = (
-    "my parents wouldnt",
-    "my parents wont",
-    "my parents wouldnt like",
-    "my parents dont know",
-    "my parents dont like",
-    "if my parents",
-    "parents would be mad",
-    "parents cant know",
-    "without my parents knowing",
-    "parents would kill",
-    "parents wouldnt approve",
-    "scared of my parents",
-)
-
-
-def _prosocial_parent_disclosure_fold(f: str) -> bool:
-    return any(p in f for p in _PROSOCIAL_PARENT_PHRASES)
-
-
-def _parent_boundary_worry_fold(f: str) -> bool:
-    if _prosocial_parent_disclosure_fold(f):
+def _shows_parent_boundary_worry(normalized_line: str) -> bool:
+    if _mentions_parental_awareness(normalized_line):
         return False
-    if any(p in f for p in _BOUNDARY_WORRY_PARENT_PHRASES):
+    if any(phrase in normalized_line for phrase in BOUNDARY_WORRY_PARENT_PHRASES):
         return True
-    if "parent" in f and any(
-        x in f for x in ("wouldnt like", "wont like", "dont approve", "would disapprove")
+    if "parent" in normalized_line and any(
+        phrase in normalized_line for phrase in ("wouldnt like", "wont like", "dont approve", "would disapprove")
     ):
         return True
-    if "parent" in f and "dont know" in f and any(
-        x in f for x in ("would", "like", "approve", "think")
+    if "parent" in normalized_line and "dont know" in normalized_line and any(
+        phrase in normalized_line for phrase in ("would", "like", "approve", "think")
     ):
         return True
     return False
 
 
-def _conversation_has_parent_boundary_worry(conversation_text: str) -> bool:
-    for ln in conversation_text.splitlines():
-        f = _fold_apostrophe(ln.strip().lower())
-        if f and _parent_boundary_worry_fold(f):
+def _thread_has_parent_boundary_worry(conversation_text: str) -> bool:
+    for line in conversation_text.splitlines():
+        normalized_line = _normalize_apostrophes(line.strip().lower())
+        if normalized_line and _shows_parent_boundary_worry(normalized_line):
             return True
     return False
 
 
-def _age_disclosure_cluster(fold: str, conversation_text: str) -> tuple[float, list[str]]:
-    hits: list[str] = []
-    if "how old are you" not in fold:
-        return 0.0, hits
-    hits.append("cluster:age_question")
-    s = 0.16
-    if _minor_stated_solo_age(conversation_text) or _minor_age_natural_in_fold(fold):
-        hits.append("cluster:minor_age_stated")
-        s += 0.28
-    if _adult_stated_age_fold(fold):
-        hits.append("cluster:adult_age_stated")
-        s += 0.22
-    if _conversation_has_parent_boundary_worry(conversation_text):
-        hits.append("cluster:parent_boundary")
-        s += 0.12
+def _score_age_disclosure_cluster(normalized_text: str, conversation_text: str) -> tuple[float, list[str]]:
+    cluster_hits: list[str] = []
+    if "how old are you" not in normalized_text:
+        return 0.0, cluster_hits
+    cluster_hits.append("cluster:age_question")
+    cluster_score = 0.16
+    if _has_minor_age_only_line(conversation_text) or _has_minor_age_statement(normalized_text):
+        cluster_hits.append("cluster:minor_age_stated")
+        cluster_score += 0.28
+    if _has_adult_age_statement(normalized_text):
+        cluster_hits.append("cluster:adult_age_stated")
+        cluster_score += 0.22
+    if _thread_has_parent_boundary_worry(conversation_text):
+        cluster_hits.append("cluster:parent_boundary")
+        cluster_score += 0.12
     if any(
-        x in fold
-        for x in (
+        phrase in normalized_text
+        for phrase in (
             "have to tell anyone",
             "have to tell anybody",
             "dont have to tell",
@@ -442,18 +150,18 @@ def _age_disclosure_cluster(fold: str, conversation_text: str) -> tuple[float, l
             "just between us",
         )
     ):
-        hits.append("cluster:secrecy_after_discomfort")
-        s += 0.26
-    return min(1.0, s), hits
+        cluster_hits.append("cluster:secrecy_after_discomfort")
+        cluster_score += 0.26
+    return min(1.0, cluster_score), cluster_hits
 
 
-def _scam_financial_cluster(fold: str) -> tuple[float, list[str]]:
-    hits: list[str] = []
-    s = 0.0
-    gift = "gift card" in fold or "gift cards" in fold
-    if gift and any(
-        x in fold
-        for x in (
+def _score_scam_financial_cluster(normalized_text: str) -> tuple[float, list[str]]:
+    cluster_hits: list[str] = []
+    cluster_score = 0.0
+    has_gift_card_phrase = "gift card" in normalized_text or "gift cards" in normalized_text
+    if has_gift_card_phrase and any(
+        phrase in normalized_text
+        for phrase in (
             "irs",
             "refund",
             "owe you",
@@ -462,16 +170,16 @@ def _scam_financial_cluster(fold: str) -> tuple[float, list[str]]:
             "read codes",
         )
     ):
-        s = max(s, 0.92)
-        hits.append("cluster:advance_fee_gift_tax")
-    if ("bitcoin" in fold or "btc" in fold or "crypto" in fold) and any(
-        x in fold for x in ("double", "guaranteed", "wallet")
+        cluster_score = max(cluster_score, 0.92)
+        cluster_hits.append("cluster:advance_fee_gift_tax")
+    if ("bitcoin" in normalized_text or "btc" in normalized_text or "crypto" in normalized_text) and any(
+        phrase in normalized_text for phrase in ("double", "guaranteed", "wallet")
     ):
-        s = max(s, 0.9)
-        hits.append("cluster:crypto_double_scam")
+        cluster_score = max(cluster_score, 0.9)
+        cluster_hits.append("cluster:crypto_double_scam")
     if any(
-        x in fold
-        for x in (
+        phrase in normalized_text
+        for phrase in (
             "processing fee",
             "via wire",
             "wire transfer",
@@ -479,17 +187,17 @@ def _scam_financial_cluster(fold: str) -> tuple[float, list[str]]:
             "pay a $",
             "pay the fee",
         )
-    ) and any(x in fold for x in ("job", "got the job", "the job", "interview")):
-        s = max(s, 0.9)
-        hits.append("cluster:job_upfront_fee_scam")
-    return min(1.0, s), hits
+    ) and any(phrase in normalized_text for phrase in ("job", "got the job", "the job", "interview")):
+        cluster_score = max(cluster_score, 0.9)
+        cluster_hits.append("cluster:job_upfront_fee_scam")
+    return min(1.0, cluster_score), cluster_hits
 
 
-def _image_pressure_cluster(fold: str) -> tuple[float, list[str]]:
-    hits: list[str] = []
-    pic = any(
-        p in fold
-        for p in (
+def _score_image_pressure_cluster(normalized_text: str) -> tuple[float, list[str]]:
+    cluster_hits: list[str] = []
+    has_image_request = any(
+        phrase in normalized_text
+        for phrase in (
             "send me a pic",
             "send me pic",
             "send a pic",
@@ -500,9 +208,9 @@ def _image_pressure_cluster(fold: str) -> tuple[float, list[str]]:
             "show me your",
         )
     )
-    secrecy_or_pressure = any(
-        x in fold
-        for x in (
+    has_secrecy_or_pressure = any(
+        phrase in normalized_text
+        for phrase in (
             "just between us",
             "between us",
             "our secret",
@@ -510,41 +218,42 @@ def _image_pressure_cluster(fold: str) -> tuple[float, list[str]]:
             "nobody has to know",
             "dont be shy",
         )
-    ) or bool(_RE_COME_ON.search(fold))
-    if pic and secrecy_or_pressure:
-        hits.append("cluster:pic_secrecy_pressure")
-        return 0.88, hits
-    if pic:
-        hits.append("cluster:pic_request")
-        return 0.58, hits
-    return 0.0, hits
+    ) or bool(RE_COME_ON.search(normalized_text))
+    if has_image_request and has_secrecy_or_pressure:
+        cluster_hits.append("cluster:pic_secrecy_pressure")
+        return 0.88, cluster_hits
+    if has_image_request:
+        cluster_hits.append("cluster:pic_request")
+        return 0.58, cluster_hits
+    return 0.0, cluster_hits
 
 
 def detect_grooming_sequence(messages: list[str]) -> dict:
-    flattery = age_q = minor = adult = parent_r = iso = meet = False
-    first: dict[str, int] = {}
+    has_flattery = has_age_question = has_minor_age = has_adult_age = False
+    has_parent_resistance = has_isolation_push = has_meetup_escalation = False
+    first_seen_index: dict[str, int] = {}
 
-    for i, raw in enumerate(messages):
-        f = _fold_apostrophe(raw.lower())
+    for line_index, raw_message in enumerate(messages):
+        normalized_line = _normalize_apostrophes(raw_message.lower())
 
-        if not flattery and any(w in f for w in ("beautiful", "cute", "pretty")):
-            flattery = True
-            first.setdefault("flattery", i)
-        if not age_q and "how old are you" in f:
-            age_q = True
-            first.setdefault("age_question", i)
-        if not minor and _RE_MINOR_AGE_STATEMENT.search(f):
-            minor = True
-            first.setdefault("minor_detected", i)
-        if not adult and _RE_ADULT_AGE_STATEMENT.search(f):
-            adult = True
-            first.setdefault("adult_detected", i)
-        if not parent_r and _parent_boundary_worry_fold(f):
-            parent_r = True
-            first.setdefault("parent_resistance", i)
-        if not iso and any(
-            x in f
-            for x in (
+        if not has_flattery and any(word in normalized_line for word in ("beautiful", "cute", "pretty")):
+            has_flattery = True
+            first_seen_index.setdefault("flattery", line_index)
+        if not has_age_question and "how old are you" in normalized_line:
+            has_age_question = True
+            first_seen_index.setdefault("age_question", line_index)
+        if not has_minor_age and RE_MINOR_AGE_STATEMENT.search(normalized_line):
+            has_minor_age = True
+            first_seen_index.setdefault("minor_detected", line_index)
+        if not has_adult_age and RE_ADULT_AGE_STATEMENT.search(normalized_line):
+            has_adult_age = True
+            first_seen_index.setdefault("adult_detected", line_index)
+        if not has_parent_resistance and _shows_parent_boundary_worry(normalized_line):
+            has_parent_resistance = True
+            first_seen_index.setdefault("parent_resistance", line_index)
+        if not has_isolation_push and any(
+            phrase in normalized_line
+            for phrase in (
                 "doesnt matter",
                 "dont matter",
                 "dont tell",
@@ -555,11 +264,11 @@ def detect_grooming_sequence(messages: list[str]) -> dict:
                 "nobody will know",
             )
         ):
-            iso = True
-            first.setdefault("isolation_push", i)
-        if not meet and any(
-            x in f
-            for x in (
+            has_isolation_push = True
+            first_seen_index.setdefault("isolation_push", line_index)
+        if not has_meetup_escalation and any(
+            phrase in normalized_line
+            for phrase in (
                 "run away",
                 "meet up",
                 "lets meet",
@@ -570,79 +279,79 @@ def detect_grooming_sequence(messages: list[str]) -> dict:
                 "pick you up",
             )
         ):
-            meet = True
-            first.setdefault("meeting_escalation", i)
+            has_meetup_escalation = True
+            first_seen_index.setdefault("meeting_escalation", line_index)
 
-    prog = (
-        0.1 * int(flattery)
-        + 0.2 * int(age_q)
-        + 0.3 * int(minor)
-        + 0.3 * int(adult)
-        + 0.25 * int(parent_r)
-        + 0.4 * int(iso)
-        + 0.5 * int(meet)
+    progression_score = (
+        0.1 * int(has_flattery)
+        + 0.2 * int(has_age_question)
+        + 0.3 * int(has_minor_age)
+        + 0.3 * int(has_adult_age)
+        + 0.25 * int(has_parent_resistance)
+        + 0.4 * int(has_isolation_push)
+        + 0.5 * int(has_meetup_escalation)
     )
-    prog = float(min(1.0, prog))
+    progression_score = float(min(1.0, progression_score))
 
-    label: str | None = None
-    score = prog
-    if minor and adult and (iso or meet):
-        score = max(prog, 0.95)
-        label = "grooming_high_confidence"
+    sequence_label: str | None = None
+    final_sequence_score = progression_score
+    if has_minor_age and has_adult_age and (has_isolation_push or has_meetup_escalation):
+        final_sequence_score = max(progression_score, 0.95)
+        sequence_label = "grooming_high_confidence"
 
-    prosocial_parent = any(
-        _prosocial_parent_disclosure_fold(_fold_apostrophe(m.lower())) for m in messages
+    has_parental_awareness = any(
+        _mentions_parental_awareness(_normalize_apostrophes(message.lower())) for message in messages
     )
-    prosocial_parent_context = bool(prosocial_parent and not minor and not adult)
-    if prosocial_parent_context:
-        score = min(score, 0.33)
+    has_parent_safe_context = bool(has_parental_awareness and not has_minor_age and not has_adult_age)
+    if has_parent_safe_context:
+        final_sequence_score = min(final_sequence_score, 0.33)
 
-    flags = {
-        "flattery": flattery,
-        "age_question": age_q,
-        "minor_detected": minor,
-        "adult_detected": adult,
-        "parent_resistance": parent_r,
-        "isolation_push": iso,
-        "meeting_escalation": meet,
+    sequence_flags = {
+        "flattery": has_flattery,
+        "age_question": has_age_question,
+        "minor_detected": has_minor_age,
+        "adult_detected": has_adult_age,
+        "parent_resistance": has_parent_resistance,
+        "isolation_push": has_isolation_push,
+        "meeting_escalation": has_meetup_escalation,
     }
     return {
-        "score": round(score, 4),
-        "label": label,
-        "flags": flags,
-        "first_index": first,
-        "prosocial_parent_context": prosocial_parent_context,
+        "score": round(final_sequence_score, 4),
+        "label": sequence_label,
+        "flags": sequence_flags,
+        "first_index": first_seen_index,
+        "prosocial_parent_context": has_parent_safe_context,
     }
 
 
 def per_message_line_markers(lines: list[str]) -> list[list[str]]:
-    markers: list[list[str]] = []
-    for raw in lines:
-        f = _fold_apostrophe(raw.lower())
-        content = re.sub(r"^\s*user\d+\s*:\s*", "", f, count=1, flags=re.I)
-        found: list[str] = []
-        for kw in RISK_KEYWORDS:
-            kf = _fold_apostrophe(kw.lower())
-            if kf in content and kw not in found:
-                found.append(kw)
-                if len(found) >= 6:
+    message_markers: list[list[str]] = []
+    for line in lines:
+        normalized_line = _normalize_apostrophes(line.lower())
+        message_content = re.sub(r"^\s*user\d+\s*:\s*", "", normalized_line, count=1, flags=re.I)
+        line_hits: list[str] = []
+        for keyword in RISK_KEYWORDS:
+            normalized_keyword = _normalize_apostrophes(keyword.lower())
+            if normalized_keyword in message_content and keyword not in line_hits:
+                line_hits.append(keyword)
+                if len(line_hits) >= 6:
                     break
-        if len(found) < 8:
+        if len(line_hits) < 8:
             for phrase in GROOMING_PHRASES:
-                p = _fold_apostrophe(phrase.lower())
-                if p in content:
-                    label = phrase if len(phrase) <= 36 else phrase[:33] + "..."
-                    tag = f"phrase:{label}"
-                    if tag not in found:
-                        found.append(tag)
-                    if len(found) >= 8:
+                normalized_phrase = _normalize_apostrophes(phrase.lower())
+                if normalized_phrase in message_content:
+                    short_label = phrase if len(phrase) <= 36 else phrase[:33] + "..."
+                    phrase_tag = f"phrase:{short_label}"
+                    if phrase_tag not in line_hits:
+                        line_hits.append(phrase_tag)
+                    if len(line_hits) >= 8:
                         break
-        for ph in THREAT_PHRASES:
-            if ph in content:
-                found.append(f"threat:{ph}")
+        for threat_phrase in THREAT_PHRASES:
+            if threat_phrase in message_content:
+                line_hits.append(f"threat:{threat_phrase}")
                 break
-        markers.append(found[:10])
-    return markers
+        message_markers.append(line_hits[:10])
+    return message_markers
 
 
 def rule_score_for_text(
@@ -650,70 +359,70 @@ def rule_score_for_text(
     num_messages: int,
     messages: list[str] | None = None,
 ) -> tuple[float, dict]:
-    text_lower = conversation_text.lower()
-    fold = _fold_apostrophe(text_lower)
-    hits: dict[str, int | list[str] | dict] = {"keywords": 0, "age_cues": []}
+    lower_text = conversation_text.lower()
+    normalized_text = _normalize_apostrophes(lower_text)
+    rule_hits: dict[str, int | list[str] | dict] = {"keywords": 0, "age_cues": []}
 
-    kw_hits = 0
-    for kw in RISK_KEYWORDS:
-        kf = _fold_apostrophe(kw)
-        if kf in fold:
-            c = fold.count(kf)
-            kw_hits += c
-            hits["keywords"] = int(hits["keywords"]) + c
+    keyword_hit_count = 0
+    for keyword in RISK_KEYWORDS:
+        normalized_keyword = _normalize_apostrophes(keyword)
+        if normalized_keyword in normalized_text:
+            occurrences = normalized_text.count(normalized_keyword)
+            keyword_hit_count += occurrences
+            rule_hits["keywords"] = int(rule_hits["keywords"]) + occurrences
 
-    b_n, b_list = _boundary_keyword_hits(text_lower)
-    kw_hits += b_n
-    hits["keywords"] = int(hits["keywords"]) + b_n
-    hits["boundary_keywords"] = b_list
+    boundary_hit_count, boundary_keywords = _count_boundary_keyword_hits(lower_text)
+    keyword_hit_count += boundary_hit_count
+    rule_hits["keywords"] = int(rule_hits["keywords"]) + boundary_hit_count
+    rule_hits["boundary_keywords"] = boundary_keywords
 
-    age_hits = []
-    for pat in AGE_CUE_PATTERNS:
-        if pat.search(conversation_text):
-            age_hits.append(pat.pattern)
-    hits["age_cues"] = age_hits
+    age_cue_patterns = []
+    for pattern in AGE_CUE_PATTERNS:
+        if pattern.search(conversation_text):
+            age_cue_patterns.append(pattern.pattern)
+    rule_hits["age_cues"] = age_cue_patterns
 
-    phrase_s, phrase_hits = _grooming_phrase_score(fold)
-    hits["grooming_phrases"] = phrase_hits
+    phrase_score, grooming_phrases = _score_grooming_phrases(normalized_text)
+    rule_hits["grooming_phrases"] = grooming_phrases
 
-    cluster_s, cluster_hits = _age_disclosure_cluster(fold, conversation_text)
-    hits["age_disclosure_cluster"] = cluster_hits
+    age_cluster_score, age_cluster_hits = _score_age_disclosure_cluster(normalized_text, conversation_text)
+    rule_hits["age_disclosure_cluster"] = age_cluster_hits
 
-    scam_s, scam_hits = _scam_financial_cluster(fold)
-    hits["scam_cluster"] = scam_hits
+    scam_cluster_score, scam_cluster_hits = _score_scam_financial_cluster(normalized_text)
+    rule_hits["scam_cluster"] = scam_cluster_hits
 
-    img_s, img_hits = _image_pressure_cluster(fold)
-    hits["image_pressure_cluster"] = img_hits
+    image_cluster_score, image_cluster_hits = _score_image_pressure_cluster(normalized_text)
+    rule_hits["image_pressure_cluster"] = image_cluster_hits
 
-    msg_lines = messages if messages is not None else [
+    thread_lines = messages if messages is not None else [
         ln.strip() for ln in conversation_text.splitlines() if ln.strip()
     ]
-    gs = detect_grooming_sequence(msg_lines)
-    hits["grooming_sequence"] = gs
+    grooming_sequence = detect_grooming_sequence(thread_lines)
+    rule_hits["grooming_sequence"] = grooming_sequence
 
-    denom = max(num_messages, 1)
-    density = min(1.0, kw_hits / (denom * 4.0))
-    age_boost = 0.32 if age_hits else 0.0
-    escalation = min(1.0, kw_hits / 18.0)
+    message_denominator = max(num_messages, 1)
+    keyword_density = min(1.0, keyword_hit_count / (message_denominator * 4.0))
+    age_boost = 0.32 if age_cue_patterns else 0.0
+    escalation_signal = min(1.0, keyword_hit_count / 18.0)
 
-    grooming_raw = 0.45 * density + 0.35 * age_boost + 0.2 * escalation
-    grooming_score = float(max(0.0, min(1.0, grooming_raw)))
+    base_grooming_score = 0.45 * keyword_density + 0.35 * age_boost + 0.2 * escalation_signal
+    grooming_score = float(max(0.0, min(1.0, base_grooming_score)))
     grooming_score = max(
         grooming_score,
-        phrase_s,
-        cluster_s,
-        scam_s,
-        img_s,
-        float(gs["score"]),
+        phrase_score,
+        age_cluster_score,
+        scam_cluster_score,
+        image_cluster_score,
+        float(grooming_sequence["score"]),
     )
-    if gs.get("prosocial_parent_context"):
-        grooming_score = min(grooming_score, 0.18)  # cap when parents looped in, no ages
+    if grooming_sequence.get("prosocial_parent_context"):
+        grooming_score = min(grooming_score, 0.18)  # lower score when parents are clearly involved
 
-    threat_s, threat_meta = _threat_score(text_lower, conversation_text)
-    hits["threat"] = threat_meta
+    threat_score, threat_meta = _score_threat_language(lower_text, conversation_text)
+    rule_hits["threat"] = threat_meta
 
-    score = max(grooming_score, threat_s)
-    hits["grooming_component"] = round(grooming_score, 4)
-    hits["keyword_density"] = round(density, 4)
-    hits["escalation"] = round(escalation, 4)
-    return score, hits
+    final_rule_score = max(grooming_score, threat_score)
+    rule_hits["grooming_component"] = round(grooming_score, 4)
+    rule_hits["keyword_density"] = round(keyword_density, 4)
+    rule_hits["escalation"] = round(escalation_signal, 4)
+    return final_rule_score, rule_hits

@@ -15,20 +15,24 @@ from app.config import settings
 
 
 def _root() -> Path:
+    # Returns the project root directory.
     return Path(__file__).resolve().parent.parent
 
 
 def _default_path() -> Path:
+    # Resolves the JSON data file path from settings or default location.
     if settings.data_json_path is not None:
         return Path(settings.data_json_path)
     return _root() / "data" / "app_data.json"
 
 
 def _now_iso() -> str:
+    # Returns the current UTC timestamp in ISO format.
     return datetime.now(timezone.utc).isoformat()
 
 
 def _parse_dt(value: str | datetime) -> datetime:
+    # Parses ISO datetime strings while accepting existing datetime objects.
     if isinstance(value, datetime):
         return value
     s = value.replace("Z", "+00:00")
@@ -36,6 +40,7 @@ def _parse_dt(value: str | datetime) -> datetime:
 
 
 def _empty_canonical() -> dict[str, Any]:
+    # Creates an empty canonical v2 store structure.
     return {
         "version": 2,
         "counters": {
@@ -54,6 +59,7 @@ def _empty_canonical() -> dict[str, Any]:
 
 
 def _ns_conv(d: dict[str, Any]) -> SimpleNamespace:
+    # Converts a conversation row dict into a namespace object.
     return SimpleNamespace(
         id=d["id"],
         public_id=d["public_id"],
@@ -64,6 +70,7 @@ def _ns_conv(d: dict[str, Any]) -> SimpleNamespace:
 
 
 def _ns_msg(d: dict[str, Any]) -> SimpleNamespace:
+    # Converts a message row dict into a namespace object.
     return SimpleNamespace(
         id=d["id"],
         conversation_id=d["conversation_id"],
@@ -74,6 +81,7 @@ def _ns_msg(d: dict[str, Any]) -> SimpleNamespace:
 
 
 def _ns_risk(d: dict[str, Any]) -> SimpleNamespace:
+    # Converts a risk row dict into a namespace object.
     return SimpleNamespace(
         id=d["id"],
         conversation_id=d["conversation_id"],
@@ -89,6 +97,7 @@ def _ns_risk(d: dict[str, Any]) -> SimpleNamespace:
 
 
 def _ns_case(d: dict[str, Any]) -> SimpleNamespace:
+    # Converts a moderation case row dict into a namespace object.
     return SimpleNamespace(
         id=d["id"],
         conversation_id=d["conversation_id"],
@@ -104,6 +113,7 @@ def _ns_case(d: dict[str, Any]) -> SimpleNamespace:
 
 
 def _v1_to_canonical(raw: dict[str, Any]) -> dict[str, Any]:
+    # Migrates legacy v1 JSON shape into canonical v2 format.
     by_c: dict[int, list[int]] = {}
     for p in raw.get("participants") or []:
         cid = int(p["conversation_id"])
@@ -126,6 +136,7 @@ def _v1_to_canonical(raw: dict[str, Any]) -> dict[str, Any]:
 
 
 def _is_compact_v2(raw: dict[str, Any]) -> bool:
+    # Detects whether a v2 file is stored in compact list form.
     if raw.get("version") != 2:
         return False
     u = raw.get("users")
@@ -143,6 +154,7 @@ def _is_compact_v2(raw: dict[str, Any]) -> bool:
 
 
 def _expand_compact_v2(raw: dict[str, Any]) -> dict[str, Any]:
+    # Expands compact v2 list rows into verbose dict rows.
     users = [
         {"id": int(t[0]), "username": t[1], "role": t[2]} for t in (raw.get("users") or [])
     ]
@@ -212,6 +224,7 @@ def _expand_compact_v2(raw: dict[str, Any]) -> dict[str, Any]:
 
 
 def _ensure_member_ids_verbose_v2(raw: dict[str, Any]) -> dict[str, Any]:
+    # Ensures each conversation row has member_ids in verbose v2 data.
     if raw.get("participants"):
         by_c: dict[int, list[int]] = {}
         for p in raw["participants"]:
@@ -230,6 +243,7 @@ def _ensure_member_ids_verbose_v2(raw: dict[str, Any]) -> dict[str, Any]:
 
 
 def _normalize_to_canonical(raw: dict[str, Any]) -> dict[str, Any]:
+    # Normalizes supported on-disk versions into canonical v2 data.
     v = int(raw.get("version", 1))
     if v == 1:
         return _v1_to_canonical(raw)
@@ -241,6 +255,7 @@ def _normalize_to_canonical(raw: dict[str, Any]) -> dict[str, Any]:
 
 
 def _canonical_to_compact_disk(data: dict[str, Any]) -> dict[str, Any]:
+    # Converts canonical v2 data to compact form for disk writes.
     return {
         "version": 2,
         "counters": dict(data["counters"]),
@@ -298,10 +313,12 @@ def _canonical_to_compact_disk(data: dict[str, Any]) -> dict[str, Any]:
 
 class AppStore:
     def __init__(self, path: Path | None = None):
+        # Initializes store path and thread lock.
         self.path = path or _default_path()
         self._lock = threading.Lock()
 
     def _read(self) -> dict[str, Any]:
+        # Reads and normalizes store data, creating file when missing.
         self.path.parent.mkdir(parents=True, exist_ok=True)
         if not self.path.exists():
             data = _empty_canonical()
@@ -316,6 +333,7 @@ class AppStore:
         return _normalize_to_canonical(raw)
 
     def _write_unlocked(self, data: dict[str, Any]) -> None:
+        # Writes compact JSON to disk using atomic temp-file replacement.
         disk = _canonical_to_compact_disk(data)
         text = json.dumps(disk, ensure_ascii=False, indent=2, default=str) + "\n"
         tmp = self.path.with_suffix(".tmp")
@@ -323,10 +341,12 @@ class AppStore:
         tmp.replace(self.path)
 
     def _next_id(self, data: dict[str, Any], key: str) -> int:
+        # Increments and returns the next ID for a counter key.
         data["counters"][key] = int(data["counters"][key]) + 1
         return data["counters"][key]
 
     def _mutate(self, fn: Callable[[dict[str, Any]], Any]) -> Any:
+        # Runs a write operation under lock and persists changes.
         with self._lock:
             data = self._read()
             out = fn(data)
@@ -334,14 +354,17 @@ class AppStore:
             return out
 
     def _view(self, fn: Callable[[dict[str, Any]], Any]) -> Any:
+        # Runs a read-only operation under lock on copied data.
         with self._lock:
             return fn(deepcopy(self._read()))
 
     # users
     def users_empty(self) -> bool:
+        # Returns True when no users exist in the store.
         return self._view(lambda d: len(d["users"]) == 0)
 
     def add_users(self, specs: list[tuple[str, str]]) -> None:
+        # Adds users from (username, role) tuples.
         def op(data: dict[str, Any]) -> None:
             for username, role in specs:
                 uid = self._next_id(data, "user")
@@ -352,6 +375,7 @@ class AppStore:
         self._mutate(op)
 
     def list_users(self) -> list[SimpleNamespace]:
+        # Lists users ordered by ID.
         return self._view(
             lambda d: sorted(
                 (SimpleNamespace(**u) for u in d["users"]),
@@ -360,6 +384,7 @@ class AppStore:
         )
 
     def get_user(self, user_id: int) -> SimpleNamespace | None:
+        # Returns one user by ID, or None when missing.
         def find(data: dict[str, Any]) -> SimpleNamespace | None:
             for u in data["users"]:
                 if u["id"] == user_id:
@@ -369,11 +394,13 @@ class AppStore:
         return self._view(find)
 
     def moderator_ids(self) -> set[int]:
+        # Returns IDs for users with moderator role.
         return self._view(
             lambda d: {u["id"] for u in d["users"] if u["role"] == "moderator"}
         )
 
     def non_moderator_users(self) -> list[SimpleNamespace]:
+        # Lists regular user accounts ordered by ID.
         return self._view(
             lambda d: sorted(
                 (SimpleNamespace(**u) for u in d["users"] if u["role"] == "user"),
@@ -382,10 +409,12 @@ class AppStore:
         )
 
     def has_conversation_title(self, title: str) -> bool:
+        # Checks whether a conversation title already exists.
         return self._view(lambda d: any(c["title"] == title for c in d["conversations"]))
 
     # conversations
     def add_conversation(self, title: str, send_restricted: bool = False) -> SimpleNamespace:
+        # Creates a new conversation row and returns it.
         def op(data: dict[str, Any]) -> SimpleNamespace:
             cid = self._next_id(data, "conversation")
             row = {
@@ -402,6 +431,7 @@ class AppStore:
         return self._mutate(op)
 
     def add_participants(self, conversation_id: int, user_ids: list[int]) -> None:
+        # Adds user IDs to a conversation without duplicates.
         def op(data: dict[str, Any]) -> None:
             for c in data["conversations"]:
                 if c["id"] == conversation_id:
@@ -415,6 +445,7 @@ class AppStore:
         self._mutate(op)
 
     def get_conversation(self, conversation_id: int) -> SimpleNamespace | None:
+        # Returns one conversation by ID, or None when missing.
         return self._view(
             lambda d: next(
                 (_ns_conv(c) for c in d["conversations"] if c["id"] == conversation_id),
@@ -423,11 +454,13 @@ class AppStore:
         )
 
     def list_conversations(self) -> list[SimpleNamespace]:
+        # Lists conversations ordered by ID.
         return self._view(
             lambda d: sorted((_ns_conv(c) for c in d["conversations"]), key=lambda x: x.id)
         )
 
     def update_conversation(self, conversation_id: int, **fields: Any) -> None:
+        # Updates editable conversation fields by ID.
         def op(data: dict[str, Any]) -> None:
             for c in data["conversations"]:
                 if c["id"] == conversation_id:
@@ -441,6 +474,7 @@ class AppStore:
 
     # messages
     def add_message(self, conversation_id: int, sender_id: int, content: str) -> SimpleNamespace:
+        # Appends a message to a conversation.
         def op(data: dict[str, Any]) -> SimpleNamespace:
             mid = self._next_id(data, "message")
             row = {
@@ -456,6 +490,7 @@ class AppStore:
         return self._mutate(op)
 
     def list_messages(self, conversation_id: int) -> list[SimpleNamespace]:
+        # Lists conversation messages sorted by creation time.
         return self._view(
             lambda d: sorted(
                 (_ns_msg(m) for m in d["messages"] if m["conversation_id"] == conversation_id),
@@ -464,6 +499,7 @@ class AppStore:
         )
 
     def count_messages(self, conversation_id: int) -> int:
+        # Counts messages in one conversation.
         return self._view(
             lambda d: sum(1 for m in d["messages"] if m["conversation_id"] == conversation_id)
         )
@@ -481,6 +517,7 @@ class AppStore:
         fusion_ml_weight: float | None = None,
         fusion_rule_weight: float | None = None,
     ) -> SimpleNamespace:
+        # Stores a risk assessment row and returns it.
         def op(data: dict[str, Any]) -> SimpleNamespace:
             rid = self._next_id(data, "risk_assessment")
             row: dict[str, Any] = {
@@ -504,6 +541,7 @@ class AppStore:
         return self._mutate(op)
 
     def latest_risk(self, conversation_id: int) -> SimpleNamespace | None:
+        # Returns the latest risk row for a conversation.
         def pick(data: dict[str, Any]) -> SimpleNamespace | None:
             rows = [r for r in data["risk_assessments"] if r["conversation_id"] == conversation_id]
             if not rows:
@@ -522,6 +560,7 @@ class AppStore:
         reason: str | None,
         priority: int,
     ) -> None:
+        # Creates a new moderation case entry.
         def op(data: dict[str, Any]) -> None:
             cid = self._next_id(data, "moderation_case")
             now = _now_iso()
@@ -543,6 +582,7 @@ class AppStore:
         self._mutate(op)
 
     def find_open_case(self, conversation_id: int) -> SimpleNamespace | None:
+        # Returns the open moderation case for a conversation, if any.
         return self._view(
             lambda d: next(
                 (
@@ -555,6 +595,7 @@ class AppStore:
         )
 
     def list_open_cases(self) -> list[SimpleNamespace]:
+        # Lists open moderation cases by priority and age.
         return self._view(
             lambda d: sorted(
                 (_ns_case(c) for c in d["moderation_cases"] if c["status"] == "open"),
@@ -563,6 +604,7 @@ class AppStore:
         )
 
     def get_moderation_case(self, case_id: int) -> SimpleNamespace | None:
+        # Returns one moderation case by ID, or None when missing.
         return self._view(
             lambda d: next(
                 (_ns_case(c) for c in d["moderation_cases"] if c["id"] == case_id),
@@ -571,6 +613,7 @@ class AppStore:
         )
 
     def update_moderation_case(self, case_id: int, **fields: Any) -> None:
+        # Updates a moderation case and refreshes updated_at.
         def op(data: dict[str, Any]) -> None:
             for c in data["moderation_cases"]:
                 if c["id"] == case_id:
@@ -587,6 +630,7 @@ _store_singleton: AppStore | None = None
 
 
 def get_store() -> AppStore:
+    # Returns a singleton AppStore instance.
     global _store_singleton
     if _store_singleton is None:
         _store_singleton = AppStore()
@@ -594,8 +638,10 @@ def get_store() -> AppStore:
 
 
 def init_store() -> None:
+    # Forces initial store read so startup validates data file.
     get_store()._read()  # noqa: SLF001
 
 
 def get_store_dep():
+    # FastAPI dependency wrapper for the singleton store.
     yield get_store()

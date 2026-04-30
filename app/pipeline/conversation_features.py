@@ -11,6 +11,7 @@ _FEATURE_TERMS: tuple[str, ...] = tuple(
 
 
 def count_messages_in_thread(text: str) -> int:
+    # Counts messages from user labels, with a non-empty line fallback.
     n = len(re.findall(r"\buser\d+\s*:", text, re.I))
     if n > 0:
         return n
@@ -19,6 +20,7 @@ def count_messages_in_thread(text: str) -> int:
 
 
 def unique_speakers(text: str) -> int:
+    # Counts distinct user IDs found in the thread.
     ids = re.findall(r"(?m)^\s*user(\d+)\s*:", text, re.I)
     if ids:
         return len(set(ids))
@@ -27,12 +29,14 @@ def unique_speakers(text: str) -> int:
 
 
 def _lines(text: str) -> list[str]:
+    # Returns trimmed non-empty lines, handling one-line input cleanly.
     if "\n" in text.strip():
         return [ln for ln in text.splitlines() if ln.strip()]
     return [text.strip()] if text.strip() else []
 
 
 def late_stage_risk_term_count(text: str) -> int:
+    # Counts risk terms in the final 30% of the conversation.
     lines = _lines(text)
     n = len(lines)
     start = int(n * 0.7) if n else 0
@@ -41,6 +45,7 @@ def late_stage_risk_term_count(text: str) -> int:
 
 
 def repeated_risk_term_count(text: str) -> int:
+    # Counts repeated risk terms beyond their first occurrence.
     tl = text.lower()
     extra = 0
     for kw in _FEATURE_TERMS:
@@ -51,6 +56,7 @@ def repeated_risk_term_count(text: str) -> int:
 
 
 def first_risk_speaker(text: str) -> str:
+    # Returns the first user ID that uses any tracked risk term.
     lines = _lines(text)
     for line in lines:
         m = re.match(r"^\s*user(\d+)\s*:", line.strip(), re.I)
@@ -63,6 +69,7 @@ def first_risk_speaker(text: str) -> str:
 
 
 def build_feature_block(text: str) -> str:
+    # Builds a compact feature block appended to ML input text.
     n = count_messages_in_thread(text)
     sp = unique_speakers(text)
     late = late_stage_risk_term_count(text)
@@ -79,6 +86,7 @@ def build_feature_block(text: str) -> str:
 
 
 def augment_text_for_ml(raw_thread: str) -> str:
+    # Appends derived features to raw thread text for classifier input.
     if not raw_thread.strip():
         return raw_thread
     return raw_thread.strip() + build_feature_block(raw_thread)

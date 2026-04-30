@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    # Central runtime settings loaded from env and defaults.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     data_json_path: Path | None = None  # default data/app_data.json
     ml_weight: float = 0.6

@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 
 class MessageOut(BaseModel):
+    # Response model for one chat message.
     id: int
     sender_id: int
     content: str
@@ -15,12 +16,14 @@ class MessageOut(BaseModel):
 
 
 class SendMessageIn(BaseModel):
+    # Request model for sending a message.
     conversation_id: int
     sender_id: int
     content: str = Field(min_length=1, max_length=8000)
 
 
 class RiskOut(BaseModel):
+    # Response model for one risk assessment snapshot.
     ml_score: float
     rule_score: float
     final_score: float
@@ -34,6 +37,7 @@ class RiskOut(BaseModel):
 
 
 class ConversationSummaryOut(BaseModel):
+    # Lightweight conversation row for list views.
     id: int
     public_id: str
     title: str
@@ -44,6 +48,7 @@ class ConversationSummaryOut(BaseModel):
 
 
 class ConversationOut(BaseModel):
+    # Full conversation payload including messages and latest risk.
     id: int
     public_id: str
     title: str
@@ -53,15 +58,18 @@ class ConversationOut(BaseModel):
 
 
 class AnalyzeOut(BaseModel):
+    # Response model for manual re-analysis.
     assessment: RiskOut
 
 
 class FlagIn(BaseModel):
+    # Request model for user-flagged moderation cases.
     source: str = "user"
     reason: str | None = None
 
 
 class ModeratorCaseOut(BaseModel):
+    # Response model for moderator queue entries.
     id: int
     conversation_id: int
     conversation_public_id: str | None = None
@@ -79,14 +87,17 @@ class ModeratorCaseOut(BaseModel):
 
 
 class ModeratorActionIn(BaseModel):
+    # Request model for moderator actions with optional note.
     note: str | None = None
 
 
 class CreateConversationIn(BaseModel):
+    # Request model for creating a new conversation.
     title: str | None = Field(default=None, max_length=128)
 
 
 class BootstrapOut(BaseModel):
+    # Initial payload used by the chat UI on startup.
     users: list[dict]
     conversations: list[ConversationSummaryOut]
     conversation_id: int
